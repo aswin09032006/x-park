@@ -1,0 +1,43 @@
+{
+  "headers": [
+    {
+      "source": "/cyber-security-game/Build/(.*)\\.wasm",
+      "headers": [
+        { "key": "Content-Type", "value": "application/wasm" },
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/cyber-security-game/Build/(.*)\\.unityweb",
+      "headers": [
+        { "key": "Content-Type", "value": "application/octet-stream" },
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/cyber-security-game/Build/(.*)\\.js",
+      "headers": [
+        { "key": "Content-Type", "value": "application/javascript" },
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/cyber-security-game/StreamingAssets/(.*)\\.mp4",
+      "headers": [
+        { "key": "Content-Type", "value": "video/mp4" },
+        { "key": "Accept-Ranges", "value": "bytes" }
+      ]
+    },
+    {
+      "source": "/cyber-security-game/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache" }
+      ]
+    }
+  ],
+  "rewrites": [
+    { "source": "/cyber-security-game/Build/(.*)", "destination": "/cyber-security-game/Build/$1" },
+    { "source": "/cyber-security-game/StreamingAssets/(.*)", "destination": "/cyber-security-game/StreamingAssets/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

@@ -1,0 +1,105 @@
+START
+Welcome, Cyber Defender! Today, we'll secure our HR application and database. 
+Let me first show you the Notebook. Please click the Notebook icon to open the Notebook.
+BREAK
+START
+This is where you'll record the network devices' information. There is a lot to remember, so do check back here often.
+BREAK
+START
+Securing HR data is critical — personal employee information must be protected from unauthorized access and breaches. 
+Only authorized HR personnel should access this sensitive data. Let's configure our firewall to ensure this.
+To configure the Data Centre Firewall, we first need to find the network information of the Workstations used by the HR Employees.
+This will allow us to tell the Firewall "who" is allowed through.
+Please click on the HR Workstation Icon to access the INFO tab.
+BREAK
+START
+192.168.1.0 represents a network, devices within this network will have similar IP addresses. The Subnet Mask "/24" indicates that the first 24 bits are used for the network portion of the IP address.
+Please press the Highlighted button to record this information in your Notepad.
+Then press the "Close" button to close this menu.
+BREAK
+START
+Perfect! The Source IP Addresses are now written in your Notebook.
+Next we need to gather the network information of the destination that the sources are attempting to access.
+Please click the Indicated HR Application Server Icon to see its INFO tab.
+BREAK
+START
+There is only one HR Application Server, so only a single IP address. 
+But, there is extra information here. The Protocol and Port information. 
+The Protocol can be thought of as the "language" that is spoken between the HR Workstations and the Server.
+The Port can be thought of as a "room number" of a Hotel. Where the IP is the Address of the Hotel. We use port 443 for HTTPS.
+We need all three, please record them in the Notebook.
+BREAK
+START
+We now have everything we need to configure the Data Centre Firewall.
+Please click the Data Centre Firewall Icon to access the RULES tab.
+BREAK
+START
+There are four rules we need to create: an ALLOW Rule, DENY Rule, ALERT Rule, and LOG Rule.
+We'll start with the ALLOW Rule.
+Please click the top "+" icon to create a new rule.
+BREAK
+START
+First lets select the Rule Type. Set the Rule Type to ALLOW.
+BREAK
+START
+Next we should define the Source IP Addresses. You can check your Notebook if you can't remember them.
+BREAK
+START
+Now lets add the Destination IP Address. There is only 1 destination in this case, so no Subnet of multiple IP Addresses.
+BREAK
+START
+Finally, lets add the Protocol and Port, again you can check your Notebook if you don't remember which to choose.
+BREAK
+START
+That's Perfect!
+We have now told the Firewall to specifically allow the HR Workstations to access the HR Application Server.
+We should now create another rule to DENY access from any other Workstations.
+Please click the next "+" icon to create another new rule.
+BREAK
+START
+Select the DENY rule type.
+BREAK
+START
+To refer to "any" IP Address, we simply put "0.0.0.0/0", this refers to all devices on the network.
+Please set the source to the all IPs Subnet "0.0.0.0/0".
+BREAK
+START
+We are still controlling access to the HR Application Server, so the Destination IP Address, Protocol, and Port will be the same as before.
+BREAK
+START
+Great! We now have told the Firewall to DENY all access attempts from all IP Addresses that are not specified in the ALLOW rule.
+Next we want to create an ALERT rule, this will send an Alert whenever an unauthorized access attempt is made.
+Please create another new rule.
+BREAK
+START
+This time, we set the rule type to ALERT.
+BREAK
+START
+We want to report all unauthorized access attempts, so we use any IP address as "0.0.0.0/0" as the source.
+BREAK
+START
+And finally, the Destination, Protocol, and Port are again the same as the previous rules.
+BREAK
+START
+The Final Rule we need to create is the Log Rule.
+This rule will write the details of the access attempts in a log file.
+Please create one more new rule.
+BREAK
+START
+Now select the LOG rule type.
+BREAK
+START
+We again want this rule to operate on all access attempts, so please select the 0.0.0.0/0 option for the source.
+BREAK
+START
+And for the final time, this is still the HR Application Server, so the Destination, Protocol, and Port are all the same.
+BREAK
+START
+Amazing! Well Done! We have successfully told the Data Centre Firewall to correctly protect the HR Application Server.
+Next we will need to do the same for the HR Database. 
+I won't guide you on this one. But I have written the instructions on the 2nd page of your Notebook.
+Please press the CHECK button when you're done, and I'll check your work. Good Luck!
+BREAK
+START
+That's perfect! Let us now test our configuration to make sure it is working.
+BREAK
