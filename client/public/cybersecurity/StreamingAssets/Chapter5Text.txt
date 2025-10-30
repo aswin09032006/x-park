@@ -1,0 +1,22 @@
+START
+Well done for configuring the Firewall Correctly!
+We now need to test your work. Alex will come help us with this.
+Hello guys! Let's test the Firewall!
+When you're ready, please press the test button to make an access attempt from an HR Workstation.
+BREAK
+START
+Perfect! The Firewall allowed the HR Workstation to access both the HR Application Server, and the HR Database.
+Huh? What's this?
+It appears as though someone is attempting to access restricted information held in the HR Database.
+BREAK
+START
+Nice! they couldn’t access the HR Servers. The firewall did its job!
+What does the Log say?
+BREAK
+START
+Looks like Marketing tried to sneak into the HR Database, but we blocked them. The log recorded the attempt with their IP address.
+Good! Now, let’s check if the alert was triggered.
+BREAK
+START
+Great work! This way, we can monitor any suspicious activity and respond immediately. Logs and alerts are critical to maintaining network security.
+BREAK

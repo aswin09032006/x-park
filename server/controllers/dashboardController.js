@@ -38,6 +38,7 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
             let studentBadges = 0;
             let studentScore = 0;
             let hasBadge = false;
+            let studentAttempts = 0;
 
             if (student.gameData && student.gameData.size > 0) {
                 student.gameData.forEach((progress, gameId) => {
@@ -49,6 +50,10 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
                         progress.highScores.forEach(score => studentScore += score);
                     }
                     
+                    if (progress.completedLevels) {
+                        studentAttempts += progress.completedLevels.size;
+                    }
+                    
                     gamePlayCounts[gameId] = (gamePlayCounts[gameId] || 0) + 1;
                 });
             }
@@ -58,7 +63,7 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
             const studentCertificates = Math.floor(studentBadges / 3);
             stats.totalCertificates += studentCertificates;
             if (studentCertificates > 0) stats.studentsWithCertificates++;
-            stats.totalGameAttempts += studentScore;
+            stats.totalGameAttempts += studentAttempts;
 
             stats.topPerformers.push({
                 _id: student._id,
@@ -73,7 +78,7 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
         stats.topPerformers.sort((a, b) => b.score - a.score);
         stats.topPerformers = stats.topPerformers.slice(0, 5);
 
-        // --- UPDATED: Calculate Favorite Games based on this school's students ---
+        // --- THIS IS THE FIX: Add numRatings to the aggregation ---
         const favoriteGames = await Game.aggregate([
             { $unwind: '$ratings' },
             { $match: { 'ratings.user': { $in: studentIds } } },
@@ -81,24 +86,33 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
                 $group: {
                     _id: '$_id',
                     title: { $first: '$title' },
-                    averageRating: { $avg: '$ratings.rating' }
+                    averageRating: { $avg: '$ratings.rating' },
+                    numRatings: { $sum: 1 } // Count the number of ratings
                 }
             },
             { $sort: { averageRating: -1 } },
             { $limit: 4 }
         ]);
 
-        const allGames = await Game.find({}).select('title');
-        const gameIdToTitleMap = allGames.reduce((acc, game) => {
-            acc[game._id.toString()] = game.title;
-            return acc;
-        }, {});
+        const allGames = await Game.find({}).select('title imageUrl');
+        const gameMap = new Map();
+        allGames.forEach(game => {
+            const gameInfo = { title: game.title, imageUrl: game.imageUrl };
+            gameMap.set(game._id.toString(), gameInfo);
+            if (game.title === 'Data Forge') {
+                gameMap.set('data-forge', gameInfo);
+            }
+        });
 
         const topPlayedGames = Object.entries(gamePlayCounts)
-            .map(([gameId, count]) => ({
-                title: gameIdToTitleMap[gameId] || 'Unknown Game',
-                students: count
-            }))
+            .map(([gameId, count]) => {
+                const gameInfo = gameMap.get(gameId) || { title: 'Unknown Game', imageUrl: null };
+                return {
+                    title: gameInfo.title,
+                    imageUrl: gameInfo.imageUrl,
+                    students: count
+                };
+            })
             .sort((a, b) => b.students - a.students)
             .slice(0, 4);
 
@@ -117,7 +131,6 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
 
 
 
-// --- THIS IS THE FIX ---
 // @desc    Get aggregated game progress for a school admin's school
 // @route   GET /api/dashboard/school-game-progress
 // @access  Private (School Admin)
@@ -125,13 +138,14 @@ exports.getSchoolGameProgress = async (req, res) => {
     try {
         const adminSchoolId = req.user.school;
 
-        // 1. Fetch ALL games first to create a baseline
         const allGames = await Game.find({}).select('title category imageUrl');
+        
         const gameStatsMap = new Map();
+        const idTranslationMap = new Map();
 
-        // 2. Initialize stats for every game to 0
         allGames.forEach(game => {
-            gameStatsMap.set(game._id.toString(), {
+            const gameIdStr = game._id.toString();
+            gameStatsMap.set(gameIdStr, {
                 _id: game._id,
                 title: game.title,
                 category: game.category,
@@ -140,34 +154,38 @@ exports.getSchoolGameProgress = async (req, res) => {
                 attempts: 0,
                 certificates: 0,
             });
+
+            idTranslationMap.set(gameIdStr, gameIdStr);
+            if (game.title === 'Data Forge') {
+                idTranslationMap.set('data-forge', gameIdStr);
+            }
         });
 
-        // 3. Get all students for the school
         const students = await User.find({
             school: adminSchoolId,
             role: 'student',
             isApproved: true
         }).select('gameData');
 
-        // 4. Loop through students and aggregate their data into the map
         for (const student of students) {
             if (student.gameData && student.gameData.size > 0) {
                 student.gameData.forEach((progress, gameId) => {
-                    // Only update if the game exists in our map
-                    if (gameStatsMap.has(gameId)) {
-                        const stats = gameStatsMap.get(gameId);
+                    const correctGameId = idTranslationMap.get(gameId);
+
+                    if (correctGameId && gameStatsMap.has(correctGameId)) {
+                        const stats = gameStatsMap.get(correctGameId);
                         stats.badges += progress.badges ? progress.badges.size : 0;
-                        if (progress.highScores) {
-                            progress.highScores.forEach(score => stats.attempts += score);
+                        
+                        if (progress.completedLevels) {
+                            stats.attempts += progress.completedLevels.size;
                         }
                     }
                 });
             }
         }
 
-        // 5. Convert map values to an array and calculate certificates
         const results = Array.from(gameStatsMap.values()).map(game => {
-            game.certificates = Math.floor(game.badges / 3); // Example logic
+            game.certificates = Math.floor(game.badges / 3);
             return game;
         });
 

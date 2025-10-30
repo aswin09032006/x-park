@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useGames } from '../context/GameContext'; // <-- Import the context hook
 
 const CyberSecurityGame = () => {

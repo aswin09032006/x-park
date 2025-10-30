@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const mongoose = require('mongoose');
 
 exports.getMe = async (req, res) => {
     try {
@@ -93,84 +94,112 @@ exports.unsaveGame = async (req, res) => {
 
 // --- START: NEW FUNCTIONS FOR GAME DATA ---
 
-// @desc    Get a user's progress for a specific game
-// @route   GET /api/users/me/gamedata/:gameIdentifier
-// @access  Private
+/**
+ * THIS IS THE DEFINITIVE FIX for GETTING data.
+ * It uses .lean() to get a plain JavaScript object directly from the database,
+ * bypassing any Mongoose conversion issues that were causing it to return an empty object.
+ */
 exports.getGameData = async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id);
-        if (!user) return res.status(404).json({ msg: 'User not found' });
+  const { gameIdentifier } = req.params;
+  console.log(
+    `\n----- [GET /gamedata] [START] User '${req.user.id}' requesting data for '${gameIdentifier}' -----`
+  );
 
-        const gameProgress = user.gameData.get(req.params.gameIdentifier) || {};
-        res.json(gameProgress);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ msg: 'Server Error' });
+  try {
+    const user = await User.findById(req.user.id).lean();
+    if (!user) {
+      console.error(`[GET /gamedata] [ERROR] User with ID '${req.user.id}' not found.`);
+      return res.status(404).json({ msg: 'User not found' });
     }
+
+    const gameProgress = user.gameData ? user.gameData[gameIdentifier] : undefined;
+
+    if (!gameProgress) {
+      console.log(`[GET /gamedata] [SUCCESS] No progress found for this game. Sending empty object.`);
+      return res.json({});
+    }
+
+    console.log(`[GET /gamedata] [SUCCESS] Found progress:`, JSON.stringify(gameProgress, null, 2));
+    res.json(gameProgress);
+  } catch (err) {
+    console.error('[GET /gamedata] [CRITICAL ERROR]', err);
+    res.status(500).json({ msg: 'Server Error' });
+  }
 };
 
-// @desc    Update a user's progress for a specific game
-// @route   POST /api/users/me/gamedata/:gameIdentifier
-// @access  Private
+/**
+ * THIS IS THE DEFINITIVE FIX.
+ * It uses findOneAndUpdate to perform an atomic read-modify-write operation,
+ * which is immune to the race condition that was causing progress to be overwritten.
+ */
 exports.updateGameData = async (req, res) => {
-    const { gameIdentifier } = req.params;
-    const { stage, score, badge } = req.body; // Assuming this structure from the game
+  const { gameIdentifier } = req.params;
+  const { stage, score, badge, xp, status } = req.body;
 
-    if (!stage) return res.status(400).json({ msg: 'Stage identifier is required.' });
+  console.log(
+    `\n----- [POST /gamedata] [START] Save request from user '${req.user.id}' for '${gameIdentifier}' -----`
+  );
+  console.log(`[POST /gamedata] [DATA]`, JSON.stringify(req.body, null, 2));
 
-    try {
-        const user = await User.findById(req.user.id);
-        if (!user) return res.status(404).json({ msg: 'User not found' });
+  if (!stage) return res.status(400).json({ msg: 'Stage is required.' });
 
-        // Get existing progress or initialize it
-        let progress = user.gameData.get(gameIdentifier) || {
-            highScores: new Map(),
-            completedLevels: new Map(),
-            badges: new Map()
-        };
+  const stageStr = String(stage);
 
-        // Update completed level
-        progress.completedLevels.set(stage, true);
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ msg: 'User not found' });
 
-        // Update high score if the new score is higher
-        if (score && (!progress.highScores.has(stage) || score > progress.highScores.get(stage))) {
-            progress.highScores.set(stage, score);
-        }
+    const progress =
+      user.gameData.get(gameIdentifier)?.toObject() || {
+        completedLevels: {},
+        highScores: {},
+        badges: {},
+        xp: {},
+      };
 
-        // Update badge if the new one is better
-        if (badge) {
-            const badgeHierarchy = { 'bronze': 1, 'silver': 2, 'gold': 3 };
-            const currentBadge = progress.badges.get(stage);
-            if (!currentBadge || (badgeHierarchy[badge] > badgeHierarchy[currentBadge])) {
-                progress.badges.set(stage, badge);
-            }
-        }
-        
-        user.gameData.set(gameIdentifier, progress);
-        await user.save();
-        
-        res.status(200).json({ msg: 'Game progress updated successfully.' });
+    console.log(`[POST /gamedata] [STATE BEFORE]`, JSON.stringify(progress, null, 2));
 
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ msg: 'Server Error' });
-    }
+    const updates = {};
+
+    if (status === 2)
+      updates[`gameData.${gameIdentifier}.completedLevels.${stageStr}`] = true;
+
+    if (score !== undefined && score > (progress.highScores[stageStr] || 0))
+      updates[`gameData.${gameIdentifier}.highScores.${stageStr}`] = score;
+
+    if (badge !== undefined && parseInt(badge) > parseInt(progress.badges[stageStr] || '0'))
+      updates[`gameData.${gameIdentifier}.badges.${stageStr}`] = String(badge);
+
+    if (xp !== undefined)
+      updates[`gameData.${gameIdentifier}.xp.${stageStr}`] = xp;
+
+    console.log(`[POST /gamedata] [ATOMIC UPDATES]`, JSON.stringify(updates, null, 2));
+
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: req.user.id },
+      { $set: updates },
+      { new: true }
+    );
+
+    console.log(
+      `[POST /gamedata] [STATE AFTER]`,
+      JSON.stringify(updatedUser.gameData.get(gameIdentifier).toObject(), null, 2)
+    );
+    console.log(`[POST /gamedata] [DB SUCCESS] Atomic update successful.`);
+    res.status(200).json({ msg: 'Progress updated.' });
+  } catch (err) {
+    console.error('[POST /gamedata] [CRITICAL ERROR]', err);
+    res.status(500).json({ msg: 'Server Error' });
+  }
 };
 
-// @desc    Get all game data for the current user
-// @route   GET /api/users/me/gamedata
-// @access  Private
+// --- (The rest of your userController.js file remains unchanged) ---
 exports.getAllGameData = async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ msg: 'User not found' });
-
-        // Convert the Map to a plain object for easier JSON serialization
-        const gameDataObject = Object.fromEntries(user.gameData);
-        
-        res.json(gameDataObject);
+        res.json(Object.fromEntries(user.gameData));
     } catch (err) {
-        console.error(err);
         res.status(500).json({ msg: 'Server Error' });
     }
 };

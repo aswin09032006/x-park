@@ -1,14 +1,17 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const Schema = mongoose.Schema;
 
-const GameProgressSchema = new mongoose.Schema({
-    highScores: { type: Map, of: Number, default: {} },
+const GameProgressSchema = new Schema({
     completedLevels: { type: Map, of: Boolean, default: {} },
-    badges: { type: Map, of: String, default: {} }
+    highScores: { type: Map, of: Number, default: {} },
+    badges: { type: Map, of: String, default: {} },
+    xp: { type: Map, of: Number, default: {} }
 }, { _id: false });
 
-const UserSchema = new mongoose.Schema({
+
+const UserSchema = new Schema({
     username: { type: String, unique: true, sparse: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, select: false },
@@ -60,6 +63,8 @@ const UserSchema = new mongoose.Schema({
         of: GameProgressSchema,
         default: {}
     },
+
+    date: { type: Date, default: Date.now }
 }, { timestamps: true });
 
 UserSchema.pre('save', async function (next) {

@@ -6,32 +6,41 @@ const GameList = ({ title, games, showRating = false }) => (
     <div className="bg-[#1C1C1C] p-6 rounded-2xl">
         <h3 className="font-bold text-lg mb-4 text-white">{title}</h3>
         <ul className="space-y-3">
-            {games.map((game, index) => (
-                <li key={index} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-3">
-                        {showRating ? (
-                            <span className="text-gray-400 font-mono text-xs w-6 text-center">{`0${index + 1}`}</span>
-                        ) : (
-                             <img src={`https://i.pravatar.cc/40?u=${game.title}`} alt="game" className="w-8 h-8 rounded-full" />
-                        )}
-                        <p className="text-gray-200">{game.title}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {showRating && <Star size={14} className="text-yellow-500" />}
-                        <span className={`py-1 px-3 rounded-full text-xs font-semibold ${showRating ? 'bg-gray-700/50 text-yellow-400' : 'bg-gray-700/50 text-gray-300'}`}>
-                           {showRating ? game.averageRating.toFixed(1) : `${game.students} Students`}
-                        </span>
-                    </div>
+            {games.length > 0 ? (
+                games.map((game, index) => (
+                    <li key={index} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-3">
+                            {showRating ? (
+                                <span className="text-gray-400 font-mono text-xs w-6 text-center">{`0${index + 1}`}</span>
+                            ) : (
+                                <img 
+                                    src={game.imageUrl || `https://i.pravatar.cc/40?u=${game.title}`} 
+                                    alt={game.title} 
+                                    className="w-8 h-8 rounded-full object-cover" 
+                                />
+                            )}
+                            <p className="text-gray-200">{game.title}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {showRating && <Star size={14} className="text-yellow-500" /> }
+                            {showRating ? game.averageRating.toFixed(1) : `${game.students} Students`}
+                            <span className={`py-1 px-3 rounded-full text-xs font-semibold ${showRating ? 'bg-gray-700/50 text-gray-300' : 'hidden'}`}>
+                                {showRating ? `${game.numRatings} ${game.numRatings === 1 ? 'Rating' : 'Ratings'}` : ``}
+                            </span>
+                        </div>
+                    </li>
+                ))
+            ) : (
+                <li className="text-center text-gray-500 text-sm py-4">
+                    No games to display in this section.
                 </li>
-            ))}
+            )}
         </ul>
     </div>
 );
 
 
-// --- 1. ACCEPT 'schoolName' AS A PROP ---
 const AdminSidebar = ({ user, schoolName, favoriteGames, topPlayedGames }) => {
-    // --- 2. UPDATE THE GUARD CLAUSE TO INCLUDE 'schoolName' ---
     if (!user || !schoolName || !favoriteGames || !topPlayedGames) {
         return null;
     }

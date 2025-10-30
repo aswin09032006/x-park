@@ -347,21 +347,28 @@ exports.getStudentGameData = async (req, res) => {
         const { studentId } = req.params;
         const adminSchoolId = req.user.school.toString();
 
-        // --- THIS IS THE FIX: Populate the school field to check it ---
         const student = await User.findById(studentId).select('gameData school');
         
-        // --- THIS IS THE FIX: Add a robust check for the student's school ---
         if (!student || !student.school || student.school.toString() !== adminSchoolId) {
             return res.status(404).json({ msg: 'Student not found in your school.' });
         }
 
         if (!student.gameData || student.gameData.size === 0) {
-            return res.json([]); // Return empty array if no game data
+            return res.json([]);
         }
 
-        const gameIds = Array.from(student.gameData.keys());
-        const games = await Game.find({ '_id': { $in: gameIds } }).select('title');
-        const gameMap = new Map(games.map(g => [g._id.toString(), g.title]));
+        // --- THIS IS THE FIX ---
+        // 1. Fetch all games to create a comprehensive lookup map.
+        const allGames = await Game.find({}).select('title');
+        const gameMap = new Map();
+        allGames.forEach(game => {
+            // Map by ObjectId
+            gameMap.set(game._id.toString(), game.title);
+            // Manually map any known string identifiers
+            if (game.title === 'Data Forge') {
+                gameMap.set('data-forge', game.title);
+            }
+        });
 
         const results = [];
         for (const [gameId, progress] of student.gameData.entries()) {
@@ -372,6 +379,7 @@ exports.getStudentGameData = async (req, res) => {
             }
 
             results.push({
+                // 2. Use the new, robust map for the lookup.
                 gameTitle: gameMap.get(gameId) || 'Unknown Game',
                 gamesPlayed: progress.completedLevels ? progress.completedLevels.size : 0,
                 badges: badges,
