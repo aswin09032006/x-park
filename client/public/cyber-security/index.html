@@ -24,6 +24,17 @@
       </div>
     </div>
     <script>
+       console.log = (function(original_log) {
+        return function() {
+          const logString = Array.from(arguments).join(' ');
+          // Only forward the message containing the final game data
+          if (logString.startsWith("Unity sent JSON to page:")) {
+            console.warn("[Bridge] Intercepted and forwarding message to React: ", logString);
+            window.parent.postMessage(logString, "*"); 
+          }
+          original_log.apply(console, arguments);
+        };
+      })(console.log);
 
       var container = document.querySelector("#unity-container");
       var canvas = document.querySelector("#unity-canvas");

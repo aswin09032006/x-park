@@ -27,19 +27,28 @@ const StatCard = ({ title, value, color }) => (
   </div>
 );
 
+// --- THIS IS THE FIX: Centralized logic for processing a student's game data ---
 const processGameData = (gameData) => {
   if (!gameData) return { certificates: 0, badges: 0, gameAttempts: 0 };
-  let totalScore = 0;
-  let badges = 0;
-  for (const gameId in gameData) {
-    if (gameData[gameId].highScores) {
-      totalScore += Object.values(gameData[gameId].highScores).reduce((sum, score) => sum + score, 0);
+  
+  let totalBadges = 0;
+  let totalAttempts = 0;
+
+  // Mongoose Map is converted to an object when sent via API, so we iterate over its values
+  for (const progress of Object.values(gameData)) {
+    if (progress.badges) {
+      // For plain objects, Object.keys().length is the way to get the size
+      totalBadges += Object.keys(progress.badges).length;
     }
-    if (gameData[gameId].badges) {
-      badges += Object.keys(gameData[gameId].badges).length;
+    if (progress.completedLevels) {
+      totalAttempts += Object.keys(progress.completedLevels).length;
     }
   }
-  return { certificates: Math.floor(badges / 3), badges, gameAttempts: totalScore };
+
+  // The business rule for certificates is applied here consistently
+  const totalCertificates = Math.floor(totalBadges / 3);
+
+  return { certificates: totalCertificates, badges: totalBadges, gameAttempts: totalAttempts };
 };
 
 const ManageUsers = () => {
@@ -187,7 +196,6 @@ const ManageUsers = () => {
       <main className="p-8">
         <h2 className="text-3xl font-bold text-white mb-6">Manage Students</h2>
 
-        {/* --- Analytics + Actions Header --- */}
         {/* --- Analytics + Actions Header --- */}
         <div className="mb-8 bg-[#1C1C1C] border border-gray-800 rounded-lg p-6 shadow-sm">
           {/* Stats Grid */}

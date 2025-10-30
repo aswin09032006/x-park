@@ -1,4 +1,4 @@
-const API_URL = 'https://xpark.onrender.com/api';
+const API_URL = 'http://localhost:5000/api';
 
 // --- NEW: A dedicated function for public (unauthenticated) API calls ---
 export const publicApi = async (endpoint, method = 'GET', body = null) => {

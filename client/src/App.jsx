@@ -3,13 +3,16 @@ import AdminRoute from './components/AdminRoute';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import SuperAdminRoute from './components/SuperAdminRoute';
+import { useAuth } from './context/AuthContext';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminGamesPage from './pages/AdminGamesPage';
 import CyberSecurityGame from './pages/CyberSecurityGame';
 import DashboardPage from './pages/Dashboard';
 import DataForgeGame from './pages/DataForgeGame';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import GameLibraryPage from './pages/GameLibraryPage';
 import InvitedRegisterPage from './pages/InvitedRegisterPage';
+import LoadingPage from './pages/LoadingPage';
 import LoginPage from './pages/LoginPage';
 import ManageAdmins from './pages/ManageAdmins';
 import ManageSchools from './pages/ManageSchools';
@@ -20,9 +23,6 @@ import RegisterPage from './pages/RegisterPage';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import SupportPage from './pages/SupportPage';
 import UpdatePasswordPage from './pages/UpdatePasswordPage';
-import AdminGamesPage from './pages/AdminGamesPage';
-import { useAuth } from './context/AuthContext';
-import LoadingPage from './pages/LoadingPage';
 // --- NEW: Import the new page component ---
 import GamesProgressPage from './pages/GamesProgressPage';
 

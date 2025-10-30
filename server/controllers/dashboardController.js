@@ -35,7 +35,7 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
         const gamePlayCounts = {};
 
         for (const student of students) {
-            let studentBadges = 0;
+            let studentTotalBadges = 0; // <-- FIX: Use a new variable for the student's total
             let studentScore = 0;
             let hasBadge = false;
             let studentAttempts = 0;
@@ -43,7 +43,7 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
             if (student.gameData && student.gameData.size > 0) {
                 student.gameData.forEach((progress, gameId) => {
                     const gameBadges = progress.badges ? progress.badges.size : 0;
-                    studentBadges += gameBadges;
+                    studentTotalBadges += gameBadges; // <-- FIX: Aggregate all badges for the student
                     if (gameBadges > 0) hasBadge = true;
                     
                     if (progress.highScores) {
@@ -59,18 +59,22 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
             }
 
             if (hasBadge) stats.studentsWithBadges++;
-            stats.totalBadges += studentBadges;
-            const studentCertificates = Math.floor(studentBadges / 3);
-            stats.totalCertificates += studentCertificates;
-            if (studentCertificates > 0) stats.studentsWithCertificates++;
+            stats.totalBadges += studentTotalBadges; // Add student's total to the grand total
+            
+            // --- THIS IS THE FIX ---
+            // Calculate certificates based on the student's total badges across all games.
+            const studentTotalCertificates = Math.floor(studentTotalBadges / 3);
+            stats.totalCertificates += studentTotalCertificates;
+            
+            if (studentTotalCertificates > 0) stats.studentsWithCertificates++;
             stats.totalGameAttempts += studentAttempts;
 
             stats.topPerformers.push({
                 _id: student._id,
                 name: student.username,
                 yearGroup: student.yearGroup,
-                certificates: studentCertificates,
-                badges: studentBadges,
+                certificates: studentTotalCertificates, // <-- FIX: Use the correct total
+                badges: studentTotalBadges,
                 score: studentScore
             });
         }
@@ -78,7 +82,6 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
         stats.topPerformers.sort((a, b) => b.score - a.score);
         stats.topPerformers = stats.topPerformers.slice(0, 5);
 
-        // --- THIS IS THE FIX: Add numRatings to the aggregation ---
         const favoriteGames = await Game.aggregate([
             { $unwind: '$ratings' },
             { $match: { 'ratings.user': { $in: studentIds } } },
@@ -87,7 +90,7 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
                     _id: '$_id',
                     title: { $first: '$title' },
                     averageRating: { $avg: '$ratings.rating' },
-                    numRatings: { $sum: 1 } // Count the number of ratings
+                    numRatings: { $sum: 1 }
                 }
             },
             { $sort: { averageRating: -1 } },
@@ -99,8 +102,12 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
         allGames.forEach(game => {
             const gameInfo = { title: game.title, imageUrl: game.imageUrl };
             gameMap.set(game._id.toString(), gameInfo);
+            
             if (game.title === 'Data Forge') {
                 gameMap.set('data-forge', gameInfo);
+            }
+            if (game.title === 'Network Shield') {
+                gameMap.set('cyber-security', gameInfo);
             }
         });
 
@@ -158,6 +165,9 @@ exports.getSchoolGameProgress = async (req, res) => {
             idTranslationMap.set(gameIdStr, gameIdStr);
             if (game.title === 'Data Forge') {
                 idTranslationMap.set('data-forge', gameIdStr);
+            }
+            if (game.title === 'Network Shield') {
+                idTranslationMap.set('cyber-security', gameIdStr);
             }
         });
 

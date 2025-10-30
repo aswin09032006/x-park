@@ -1,54 +1,71 @@
-const User = require('../models/User');
-const PreRegisteredStudent = require('../models/PreRegisteredStudent');
-const School = require('../models/School'); // <-- IMPORT SCHOOL MODEL
 const fs = require('fs');
 const csv = require('csv-parser');
+const User = require('../models/User');
+const Game = require('../models/Game');
+const School = require('../models/School');
+const PreRegisteredStudent = require('../models/PreRegisteredStudent');
 const { sendEmail } = require('../services/emailService');
-const Game = require('../models/Game'); // <-- IMPORT GAME MODEL
 
-const sendInvitationEmail = async (student, unhashedToken, schoolName, customSubject, customBody, isReminder = false) => {
+// ============================================================
+// Utility: Send invitation or reminder email
+// ============================================================
+const sendInvitationEmail = async (
+    student,
+    unhashedToken,
+    schoolName,
+    customSubject,
+    customBody,
+    isReminder = false
+) => {
     const registrationLink = `https://xpark.onrender.com/register/invite/${unhashedToken}`;
 
-    // --- Define Default Templates ---
-    const defaultSubject = isReminder ? `Reminder: Your Invitation to Join XPARK` : `Your Invitation to Join XPARK`;
+    // --- Default templates ---
+    const defaultSubject = isReminder
+        ? `Reminder: Your Invitation to Join XPARK`
+        : `Your Invitation to Join XPARK`;
+
     const defaultBody = `
         <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
             <h2 style="color: #2c3e50;">Dear {{studentFirstName}},</h2>
             <p>You have been invited by your administrator at <strong>{{schoolName}}</strong> to join the XPARK platform.</p>
             <p>To activate your account and set your password, please click the button below:</p>
-            <a href="{{registrationLink}}" style="display: inline-block; background-color: #007bff; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Activate Account</a>
-            <p style="margin-top: 20px; font-size: 12px; color: #777;">
+            <a href="{{registrationLink}}" style="display:inline-block;background-color:#007bff;color:#fff;padding:12px 24px;text-decoration:none;border-radius:5px;font-weight:bold;">
+                Activate Account
+            </a>
+            <p style="margin-top:20px;font-size:12px;color:#777;">
                 If the button above does not work, please copy and paste the following link into your web browser:<br>
                 <a href="{{registrationLink}}">{{registrationLink}}</a>
             </p>
-            <p style="font-size: 12px; color: #777;">Please note: This link will expire in 14 days.</p>
-            <p style="margin-top: 20px;">We look forward to welcoming you to XPARK.</p>
-            <p style="margin-top: 10px;">Best regards,<br><strong>The XPARK Team</strong></p>
+            <p style="font-size:12px;color:#777;">Please note: This link will expire in 14 days.</p>
+            <p style="margin-top:20px;">We look forward to welcoming you to XPARK.</p>
+            <p style="margin-top:10px;">Best regards,<br><strong>The XPARK Team</strong></p>
         </div>
     `;
 
-    // --- Use provided templates or fall back to defaults ---
-    let finalSubject = customSubject || defaultSubject;
-    let finalBody = customBody || defaultBody;
+    // --- Merge templates with variables ---
+    let finalSubject = (customSubject || defaultSubject)
+        .replace(/{{studentFirstName}}/g, student.firstName)
+        .replace(/{{schoolName}}/g, schoolName);
 
-    // --- Replace all placeholders ---
-    finalSubject = finalSubject.replace(/{{studentFirstName}}/g, student.firstName);
-    finalSubject = finalSubject.replace(/{{schoolName}}/g, schoolName);
+    let finalBody = (customBody || defaultBody)
+        .replace(/{{studentFirstName}}/g, student.firstName)
+        .replace(/{{schoolName}}/g, schoolName)
+        .replace(/{{registrationLink}}/g, registrationLink);
 
-    finalBody = finalBody.replace(/{{studentFirstName}}/g, student.firstName);
-    finalBody = finalBody.replace(/{{schoolName}}/g, schoolName);
-    finalBody = finalBody.replace(/{{registrationLink}}/g, registrationLink);
-    
     const emailOptions = {
         to: student.email,
         subject: finalSubject,
-        html: finalBody
+        html: finalBody,
     };
 
     await sendEmail(emailOptions);
 };
 
-// --- NEW: School Analytics Controller ---
+// ============================================================
+// @desc    Get school statistics (capacity, registered, pending)
+// @route   GET /api/dashboard/school-stats
+// @access  Private (School Admin)
+// ============================================================
 exports.getSchoolStats = async (req, res) => {
     try {
         const schoolId = req.user.school;
@@ -59,15 +76,15 @@ exports.getSchoolStats = async (req, res) => {
 
         const registeredCount = await User.countDocuments({ school: schoolId, role: 'student' });
         const pendingCount = await PreRegisteredStudent.countDocuments({ school: schoolId, status: 'pending' });
-        
+
         const totalStudents = registeredCount + pendingCount;
-        const remainingSeats = school.capacity - totalStudents;
+        const remainingSeats = Math.max(school.capacity - totalStudents, 0);
 
         res.json({
             capacity: school.capacity,
             registered: registeredCount,
             pending: pendingCount,
-            remaining: remainingSeats < 0 ? 0 : remainingSeats
+            remaining: remainingSeats,
         });
     } catch (err) {
         console.error(err);
@@ -75,7 +92,11 @@ exports.getSchoolStats = async (req, res) => {
     }
 };
 
-// --- NEW: Resend Reminders Controller ---
+// ============================================================
+// @desc    Resend all pending invitations
+// @route   POST /api/students/reminders
+// @access  Private (School Admin)
+// ============================================================
 exports.resendReminders = async (req, res) => {
     try {
         const schoolId = req.user.school;
@@ -91,8 +112,7 @@ exports.resendReminders = async (req, res) => {
         for (const student of pendingStudents) {
             const unhashedToken = student.getRegistrationToken();
             await student.save();
-            // Call with null for subject/body to use the default reminder template
-            await sendInvitationEmail(student, unhashedToken, school.name, null, null, true); 
+            await sendInvitationEmail(student, unhashedToken, school.name, null, null, true);
         }
 
         res.status(200).json({ msg: `Successfully sent reminders to ${pendingStudents.length} student(s).` });
@@ -102,15 +122,19 @@ exports.resendReminders = async (req, res) => {
     }
 };
 
-
+// ============================================================
+// @desc    Bulk add students via CSV
+// @route   POST /api/students/bulk
+// @access  Private (School Admin)
+// ============================================================
 exports.bulkAddStudents = async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ msg: 'No file uploaded.' });
     }
-    const school = await School.findById(req.user.school).select('name');
-    if (!school) return res.status(404).json({ msg: 'Admin\'s school not found.' });
 
-    // --- Get email subject and body from the request ---
+    const school = await School.findById(req.user.school).select('name');
+    if (!school) return res.status(404).json({ msg: "Admin's school not found." });
+
     const { emailSubject, emailBody } = req.body;
     const studentsFromCsv = [];
     const failedRows = [];
@@ -127,152 +151,155 @@ exports.bulkAddStudents = async (req, res) => {
             });
         })
         .on('end', async () => {
-            // ... (rest of the validation logic remains the same)
             fs.unlinkSync(req.file.path);
 
-            if (studentsFromCsv.length === 0) { return res.status(400).json({ msg: 'CSV file was empty.' }); }
-            
-            const validStudentsToProcess = [];
+            if (studentsFromCsv.length === 0) {
+                return res.status(400).json({ msg: 'CSV file was empty.' });
+            }
+
+            const validStudents = [];
             const seenEmails = new Set();
             const seenUsernames = new Set();
 
             for (const row of studentsFromCsv) {
-                const email = row.email ? row.email.toLowerCase().trim() : '';
-                const firstName = row.firstName ? row.firstName.trim() : '';
-                const lastName = row.lastName ? row.lastName.trim() : '';
-                
+                const email = row.email.toLowerCase().trim();
+                const firstName = row.firstName.trim();
+                const lastName = row.lastName.trim();
                 const username = `${firstName} ${lastName}`.trim();
 
                 if (!email || !firstName || !lastName) {
                     failedRows.push({ ...row, reason: 'Missing required fields' });
                     continue;
                 }
+
                 if (seenEmails.has(email)) {
-                    failedRows.push({ ...row, reason: 'Duplicate email within CSV file' });
+                    failedRows.push({ ...row, reason: 'Duplicate email in CSV' });
                     continue;
                 }
                 seenEmails.add(email);
-                
-                if (username) {
-                    if (seenUsernames.has(username)) {
-                        failedRows.push({ ...row, reason: 'Duplicate name results in duplicate username within CSV file' });
-                        continue;
-                    }
-                    seenUsernames.add(username);
+
+                if (username && seenUsernames.has(username)) {
+                    failedRows.push({ ...row, reason: 'Duplicate username in CSV' });
+                    continue;
                 }
-                
-                validStudentsToProcess.push({ ...row, username, school: req.user.school });
-            }
-            
-            if (validStudentsToProcess.length === 0) {
-                 return res.status(400).json({ msg: 'Upload failed. No valid rows found to process.', details: { failedRows } });
+                seenUsernames.add(username);
+
+                validStudents.push({ ...row, username, school: req.user.school });
             }
 
-            const allEmails = validStudentsToProcess.map(s => s.email);
-            const allUsernames = validStudentsToProcess.map(s => s.username);
-            const existingUsers = await User.find({ $or: [{ email: { $in: allEmails } }, { username: { $in: allUsernames } }] }).select('email username');
-            const existingPreReg = await PreRegisteredStudent.find({ $or: [{ email: { $in: allEmails } }, { username: { $in: allUsernames } }] }).select('email username');
-            const existingEmails = new Set([...existingUsers.map(u => u.email), ...existingPreReg.map(p => p.email)]);
-            const existingUsernames = new Set([...existingUsers.map(u => u.username), ...existingPreReg.map(p => p.username)]);
-            
-            const finalStudentsData = validStudentsToProcess.filter(student => {
-                if (existingEmails.has(student.email)) {
-                    failedRows.push({ ...student, reason: 'Email already exists in the system' });
+            if (validStudents.length === 0) {
+                return res.status(400).json({ msg: 'No valid rows to process.', details: { failedRows } });
+            }
+
+            // Check for existing users or preregistrations
+            const emails = validStudents.map(s => s.email);
+            const usernames = validStudents.map(s => s.username);
+            const existingUsers = await User.find({ $or: [{ email: { $in: emails } }, { username: { $in: usernames } }] }).select('email username');
+            const existingPreRegs = await PreRegisteredStudent.find({ $or: [{ email: { $in: emails } }, { username: { $in: usernames } }] }).select('email username');
+
+            const existingEmails = new Set([...existingUsers.map(u => u.email), ...existingPreRegs.map(p => p.email)]);
+            const existingUsernames = new Set([...existingUsers.map(u => u.username), ...existingPreRegs.map(p => p.username)]);
+
+            const finalStudents = validStudents.filter(s => {
+                if (existingEmails.has(s.email)) {
+                    failedRows.push({ ...s, reason: 'Email already exists' });
                     return false;
                 }
-                if (student.username && existingUsernames.has(student.username)) {
-                    failedRows.push({ ...student, reason: 'Username (from name) already exists in the system' });
+                if (existingUsernames.has(s.username)) {
+                    failedRows.push({ ...s, reason: 'Username already exists' });
                     return false;
                 }
                 return true;
             });
 
-            if (finalStudentsData.length === 0) {
-                return res.status(400).json({ msg: 'Upload failed. All valid students from the CSV already exist.', details: { failedRows } });
+            if (finalStudents.length === 0) {
+                return res.status(400).json({ msg: 'All valid students already exist.', details: { failedRows } });
             }
-            
+
             try {
                 const studentsWithTokens = [];
                 const emailQueue = [];
-                for (const studentData of finalStudentsData) {
-                    const student = new PreRegisteredStudent(studentData);
-                    const unhashedToken = student.getRegistrationToken();
+
+                for (const s of finalStudents) {
+                    const student = new PreRegisteredStudent(s);
+                    const token = student.getRegistrationToken();
                     studentsWithTokens.push(student);
-                    emailQueue.push({ student, unhashedToken });
-                }
-                
-                const insertedDocs = await PreRegisteredStudent.insertMany(studentsWithTokens);
-
-                for (const emailJob of emailQueue) {
-                    // --- Pass the custom subject and body to the email service ---
-                    await sendInvitationEmail(emailJob.student, emailJob.unhashedToken, school.name, emailSubject, emailBody);
+                    emailQueue.push({ student, token });
                 }
 
-                const successCount = insertedDocs.length;
+                const inserted = await PreRegisteredStudent.insertMany(studentsWithTokens);
+
+                for (const { student, token } of emailQueue) {
+                    await sendInvitationEmail(student, token, school.name, emailSubject, emailBody);
+                }
+
                 res.status(200).json({
-                    msg: `Upload complete. ${successCount} invitation(s) sent, ${failedRows.length} row(s) failed.`,
-                    details: { successCount: successCount, failedRows: failedRows }
+                    msg: `Upload complete. ${inserted.length} invitations sent, ${failedRows.length} failed.`,
+                    details: { successCount: inserted.length, failedRows },
                 });
-
-            } catch (dbError) {
-                console.error("Bulk Add DB Error:", dbError);
-                res.status(500).json({ msg: 'A database error occurred during the final import.', details: { failedRows } });
+            } catch (err) {
+                console.error('Bulk Add DB Error:', err);
+                res.status(500).json({ msg: 'Database error during import.', details: { failedRows } });
             }
         });
 };
 
+// ============================================================
+// @desc    Invite a single student
+// @route   POST /api/students/invite
+// @access  Private (School Admin)
+// ============================================================
 exports.inviteStudent = async (req, res) => {
-    // --- Get email subject and body from the request ---
     const { email, firstName, lastName, phoneNumber, yearGroup, emailSubject, emailBody } = req.body;
+
     try {
         const school = await School.findById(req.user.school).select('name');
-        if (!school) return res.status(404).json({ msg: 'Admin\'s school not found.' });
+        if (!school) return res.status(404).json({ msg: "Admin's school not found." });
 
         if (await User.findOne({ email })) {
             return res.status(400).json({ msg: 'A registered user with this email already exists.' });
         }
-        
+
         const username = `${firstName} ${lastName}`.trim();
         if (await User.findOne({ username }) || await PreRegisteredStudent.findOne({ username })) {
-            return res.status(400).json({ msg: 'A student with this name already exists, resulting in a duplicate username.' });
+            return res.status(400).json({ msg: 'A student with this name already exists (duplicate username).' });
         }
 
         const existingInvite = await PreRegisteredStudent.findOne({ email });
         if (existingInvite) {
-             const unhashedToken = existingInvite.getRegistrationToken();
-             await existingInvite.save();
-             // Resending an invite from this flow will now use the new template provided by the admin
-             await sendInvitationEmail(existingInvite, unhashedToken, school.name, emailSubject, emailBody, true);
-             return res.status(200).json({ msg: 'This email was already invited. A new reminder with your content has been sent.' });
+            const token = existingInvite.getRegistrationToken();
+            await existingInvite.save();
+            await sendInvitationEmail(existingInvite, token, school.name, emailSubject, emailBody, true);
+            return res.status(200).json({ msg: 'Existing invite resent with updated content.' });
         }
-        
+
         const newStudent = new PreRegisteredStudent({
             email, firstName, lastName, username,
-            phoneNumber, yearGroup,
-            school: req.user.school
+            phoneNumber, yearGroup, school: req.user.school,
         });
 
-        const unhashedToken = newStudent.getRegistrationToken();
+        const token = newStudent.getRegistrationToken();
         await newStudent.save();
-
-        // --- Pass the custom subject and body to the email service ---
-        await sendInvitationEmail(newStudent, unhashedToken, school.name, emailSubject, emailBody);
+        await sendInvitationEmail(newStudent, token, school.name, emailSubject, emailBody);
 
         res.status(201).json({ msg: 'Invitation sent successfully.', student: newStudent });
-
     } catch (err) {
         console.error(err);
         res.status(500).json({ msg: 'Server Error' });
     }
 };
 
+// ============================================================
+// @desc    Get all registered students in admin’s school
+// ============================================================
 exports.getSchoolStudents = async (req, res) => {
     try {
-        const adminUser = await User.findById(req.user.id);
-        if (!adminUser || !adminUser.school) {
+        const admin = await User.findById(req.user.id);
+        if (!admin || !admin.school) {
             return res.status(404).json({ msg: 'Admin user or school not found.' });
         }
-        const students = await User.find({ school: adminUser.school, role: 'student' }).select('-password');
+
+        const students = await User.find({ school: admin.school, role: 'student' }).select('-password');
         res.json(students);
     } catch (err) {
         console.error(err);
@@ -280,27 +307,36 @@ exports.getSchoolStudents = async (req, res) => {
     }
 };
 
+// ============================================================
+// @desc    Get all pending students
+// ============================================================
 exports.getPendingStudents = async (req, res) => {
     try {
         const pending = await PreRegisteredStudent.find({
-            school: req.user.school, status: 'pending'
-        }).select('_id email createdAt username firstName lastName'); // <-- Include names
+            school: req.user.school,
+            status: 'pending',
+        }).select('_id email createdAt username firstName lastName');
+
         res.json(pending);
-    } catch (err)
-    {
+    } catch (err) {
         console.error(err);
         res.status(500).json({ msg: 'Server Error' });
     }
 };
 
+// ============================================================
+// @desc    Approve a registered student
+// ============================================================
 exports.approveStudent = async (req, res) => {
     try {
         const { studentId } = req.params;
-        const adminUser = await User.findById(req.user.id);
-        const student = await User.findOne({ _id: studentId, school: adminUser.school });
+        const admin = await User.findById(req.user.id);
+        const student = await User.findOne({ _id: studentId, school: admin.school });
+
         if (!student) {
             return res.status(404).json({ msg: 'Student not found in your school.' });
         }
+
         student.isApproved = true;
         await student.save();
         res.json({ msg: 'Student approved successfully.', student });
@@ -310,14 +346,19 @@ exports.approveStudent = async (req, res) => {
     }
 };
 
+// ============================================================
+// @desc    Remove a registered student
+// ============================================================
 exports.removeStudent = async (req, res) => {
     try {
         const { studentId } = req.params;
-        const adminUser = await User.findById(req.user.id);
-        const student = await User.findOne({ _id: studentId, school: adminUser.school });
+        const admin = await User.findById(req.user.id);
+        const student = await User.findOne({ _id: studentId, school: admin.school });
+
         if (!student) {
             return res.status(404).json({ msg: 'Student not found in your school.' });
         }
+
         await User.findByIdAndDelete(studentId);
         res.json({ msg: 'Student removed successfully.' });
     } catch (err) {
@@ -326,14 +367,19 @@ exports.removeStudent = async (req, res) => {
     }
 };
 
+// ============================================================
+// @desc    Remove a pending (invited) student
+// ============================================================
 exports.removePendingStudent = async (req, res) => {
     try {
         const { inviteId } = req.params;
-        const adminSchool = req.user.school;
-        const pendingStudent = await PreRegisteredStudent.findOne({ _id: inviteId, school: adminSchool });
-        if (!pendingStudent) {
+        const school = req.user.school;
+        const pending = await PreRegisteredStudent.findOne({ _id: inviteId, school });
+
+        if (!pending) {
             return res.status(404).json({ msg: 'Pending invitation not found in your school.' });
         }
+
         await PreRegisteredStudent.findByIdAndDelete(inviteId);
         res.json({ msg: 'Pending invitation removed successfully.' });
     } catch (err) {
@@ -341,15 +387,17 @@ exports.removePendingStudent = async (req, res) => {
         res.status(500).json({ msg: 'Server Error' });
     }
 };
-// --- Controller for fetching single student's game data ---
+
+// ============================================================
+// @desc    Get a student’s game data (for school admin view)
+// ============================================================
 exports.getStudentGameData = async (req, res) => {
     try {
         const { studentId } = req.params;
         const adminSchoolId = req.user.school.toString();
 
         const student = await User.findById(studentId).select('gameData school');
-        
-        if (!student || !student.school || student.school.toString() !== adminSchoolId) {
+        if (!student || student.school.toString() !== adminSchoolId) {
             return res.status(404).json({ msg: 'Student not found in your school.' });
         }
 
@@ -357,39 +405,31 @@ exports.getStudentGameData = async (req, res) => {
             return res.json([]);
         }
 
-        // --- THIS IS THE FIX ---
-        // 1. Fetch all games to create a comprehensive lookup map.
         const allGames = await Game.find({}).select('title');
         const gameMap = new Map();
         allGames.forEach(game => {
-            // Map by ObjectId
             gameMap.set(game._id.toString(), game.title);
-            // Manually map any known string identifiers
-            if (game.title === 'Data Forge') {
-                gameMap.set('data-forge', game.title);
-            }
+            if (game.title === 'Data Forge') gameMap.set('data-forge', game.title);
+            if (game.title === 'Network Shield') gameMap.set('cyber-security', game.title);
         });
 
         const results = [];
         for (const [gameId, progress] of student.gameData.entries()) {
             const badges = progress.badges ? progress.badges.size : 0;
-            let score = 0;
-            if (progress.highScores) {
-                score = Array.from(progress.highScores.values()).reduce((sum, s) => sum + s, 0);
-            }
+            const score = progress.highScores
+                ? Array.from(progress.highScores.values()).reduce((a, b) => a + b, 0)
+                : 0;
 
             results.push({
-                // 2. Use the new, robust map for the lookup.
                 gameTitle: gameMap.get(gameId) || 'Unknown Game',
                 gamesPlayed: progress.completedLevels ? progress.completedLevels.size : 0,
-                badges: badges,
+                badges,
                 certificates: Math.floor(badges / 3),
-                score: score,
+                score,
             });
         }
-        
-        res.json(results);
 
+        res.json(results);
     } catch (err) {
         console.error(err);
         res.status(500).json({ msg: 'Server Error' });
