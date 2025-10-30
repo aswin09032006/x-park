@@ -29,10 +29,9 @@ app.use(cors({
 
 app.use(express.static(path.join(__dirname, "public"), {
   setHeaders: (res, filePath) => {
-    // If the file is Brotli compressed, set the correct content encoding.
     if (filePath.endsWith('.br')) {
       res.setHeader('Content-Encoding', 'br');
-      // Also, set the appropriate content type based on the original file extension.
+      // Set the correct MIME type based on the original file extension.
       if (filePath.endsWith('.js.br')) {
         res.setHeader('Content-Type', 'application/javascript');
       } else if (filePath.endsWith('.wasm.br')) {
@@ -41,7 +40,7 @@ app.use(express.static(path.join(__dirname, "public"), {
         res.setHeader('Content-Type', 'application/octet-stream');
       }
     }
-    // Keep the original check for uncompressed wasm files, just in case.
+    // Fallback for any uncompressed wasm files.
     else if (filePath.endsWith(".wasm")) {
       res.setHeader("Content-Type", "application/wasm");
     }
