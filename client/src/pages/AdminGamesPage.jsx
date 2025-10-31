@@ -42,7 +42,15 @@ const AdminGamesPage = () => {
 
     // --- NEW: Group games by category using useMemo for efficiency ---
     const gamesByCategory = useMemo(() => {
-        return games.reduce((acc, game) => {
+    // First, sort games so Live games come before Coming Soon
+        const sortedGames = [...games].sort((a, b) => {
+            // Live (isComingSoon = false) should come first
+            if (a.isComingSoon === b.isComingSoon) return 0;
+            return a.isComingSoon ? 1 : -1;
+        });
+
+        // Then, group by category
+        return sortedGames.reduce((acc, game) => {
             const category = game.category || 'Uncategorized';
             if (!acc[category]) {
                 acc[category] = [];
