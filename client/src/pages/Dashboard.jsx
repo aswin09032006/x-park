@@ -75,12 +75,20 @@ const Dashboard = () => {
 
   const getRecommendations = () => {
     if (!games || games.length === 0) return [];
-    const gamesCopy = [...games];
+
+    // Sort games so Live games come first
+    const gamesCopy = [...games].sort((a, b) => {
+      if (a.isComingSoon === b.isComingSoon) return 0;
+      return a.isComingSoon ? 1 : -1; // live (false) first
+    });
+
+    // Prioritize "Network Shield" if it exists
     const networkShieldIndex = gamesCopy.findIndex(game => game.title === 'Network Shield');
     if (networkShieldIndex > -1) {
       const [networkShieldGame] = gamesCopy.splice(networkShieldIndex, 1);
       gamesCopy.unshift(networkShieldGame);
     }
+
     return gamesCopy.slice(0, 8);
   };
 
