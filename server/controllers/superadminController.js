@@ -88,7 +88,7 @@ exports.createSchoolAdmin = async (req, res) => {
         const resetToken = admin.getResetPasswordToken();
         await admin.save({ validateBeforeSave: false }); // Save user with the token
 
-        const resetUrl = `https://xpark.onrender.com/reset-password/${resetToken}`;
+        const resetUrl = `https://x-park-y0qe.onrender.com/reset-password/${resetToken}`;
 
         await sendEmail({
             to: admin.email,

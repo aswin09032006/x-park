@@ -17,7 +17,7 @@ const sendInvitationEmail = async (
     customBody,
     isReminder = false
 ) => {
-    const registrationLink = `https://xpark.onrender.com/register/invite/${unhashedToken}`;
+    const registrationLink = `https://x-park-y0qe.onrender.com/register/invite/${unhashedToken}`;
 
     // --- Default templates ---
     const defaultSubject = isReminder
