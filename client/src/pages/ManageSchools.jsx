@@ -5,7 +5,7 @@ import { Trash2, PlusCircle, ArrowLeft, Edit, Check, X } from 'lucide-react';
 
 const ManageSchools = () => {
     const [schools, setSchools] = useState([]);
-    // --- UPDATED: State for form data ---
+    // --- State for form data ---
     const [formData, setFormData] = useState({ name: '', capacity: '' });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -97,7 +97,7 @@ const ManageSchools = () => {
                             type="number"
                             value={formData.capacity}
                             onChange={(e) => setFormData({...formData, capacity: e.target.value})}
-                            placeholder="100"
+                            placeholder="e.g., 150" // --- UPDATED ---
                             className="w-full bg-input border border-border rounded-md px-4 py-2"
                         />
                     </div>
@@ -119,7 +119,7 @@ const ManageSchools = () => {
                     <tbody>
                         {loading && <tr><td colSpan="3" className="text-center p-8">Loading...</td></tr>}
                         {error && <tr><td colSpan="3" className="text-center p-8 text-destructive">{error}</td></tr>}
-                        
+                       
                         {schools.map(school => (
                             <tr key={school._id} className="border-t border-border">
                                 {editingSchoolId === school._id ? (
