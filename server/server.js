@@ -12,7 +12,7 @@ const app = express();
 // --- Updated CORS config ---
 const allowedOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(",")
-  : ["https://x-park.vercel.app", "https://x-park-jk5u.onrender.com", "http://localhost:5173"];
+  : ["https://x-park.vercel.app", "https://x-park-jk5u.onrender.com", "http://localhost:5173","https://x-park-y0qe.onrender.com"];
 
 app.use(cors({
   origin: (origin, callback) => {
