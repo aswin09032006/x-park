@@ -1,4 +1,4 @@
-const API_URL = 'https://xpark.onrender.com/api';
+const API_URL = 'http://xpark-backend-env.eba-vjbjyfhi.us-east-1.elasticbeanstalk.com/api';
 
 // --- NEW: A dedicated function for public (unauthenticated) API calls ---
 export const publicApi = async (endpoint, method = 'GET', body = null) => {
