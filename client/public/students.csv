@@ -1,15 +1,1 @@
-<<<<<<< HEAD
-fullName,username,email,phoneNumber,yearGroup
-Riya Sharma,riyasharma,riya.sharma@example.com,345-678-9012,9
-Karthik R,karthikr,karthik.r@example.com,456-789-0123,12
-Sneha Patel,snehap,sneha.patel@example.com,567-890-1234,10
-Vikram Nair,vikramn,vikram.nair@example.com,678-901-2345,11
-Meera Das,meerad,meera.das@example.com,789-012-3456,9
-Ananya Gupta,ananyag,ananya.gupta@example.com,890-123-4567,12
-Rahul Menon,rahulm,rahul.menon@example.com,901-234-5678,10
-Diya Iyer,diya.iyer,diya.iyer@example.com,012-345-6789,11
-=======
 firstname,lastname,email,phoneNumber,yearGroup
-John,Doe,john.doe@example.com,1234567890,10
-Jane,Smith,jane.smith@example.com,0987654321,11
->>>>>>> a82808b71a06082732bf9b4ec76ae7f852ab2cb3
