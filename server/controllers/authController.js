@@ -161,8 +161,16 @@ exports.forgotPassword = async (req, res) => {
     try {
         const user = await User.findOne({ email: req.body.email });
         if (user) {
-            const token = user.getResetPasswordToken(); await user.save({ validateBeforeSave: false });
-            await sendEmail({ to: user.email, subject: 'Password Reset', text: `Reset here: https://x-park.vercel.app/reset-password/${token}` });
+            const token = user.getResetPasswordToken(); 
+            await user.save({ validateBeforeSave: false });
+
+
+            const resetUrl = `${process.env.FRONTEND_URL_EMAIL}/reset-password/${token}`;
+            await sendEmail({ 
+                to: user.email, 
+                subject: 'Password Reset', 
+                text: `Reset here: ${resetUrl}` 
+            });
         }
         res.status(200).json({ msg: 'If a user with that email exists, a reset link has been sent.' });
     } catch (err) {
@@ -170,6 +178,7 @@ exports.forgotPassword = async (req, res) => {
         res.status(500).json({ msg: 'Server error' });
     }
 };
+
 
 exports.resetPassword = async (req, res) => {
     try {
