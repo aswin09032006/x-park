@@ -1,6 +1,0 @@
-START
-Alex! We're receiving a distress signal from the HQ's network. Our firewalls are under attack!
-Let's secure the network! What's our first move?
-We'll need to secure access to the HR database, protect remote offices, and shield our servers from third-party breaches. The firewalls are our defense. Are you ready?
-More than ever! Let's stop them!
-BREAK
