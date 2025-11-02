@@ -11,7 +11,9 @@ const {
     updateGameData, 
     getAllGameData,
     updateAvatarPreference,
-    removeAvatarPreference
+    removeAvatarPreference,
+    getPlayedGames,     // <-- THIS IS THE FIX
+    addPlayedGame       // <-- THIS IS THE FIX
 } = require('../controllers/userController');
 const { protect } = require('../middleware/authMiddleware');
 const { validate, updateUserRules } = require('../middleware/validator');
@@ -26,6 +28,10 @@ router.put('/me', protect, updateUserRules(), validate, updateMe);
 router.get('/me/saved-games', protect, getSavedGames);
 router.post('/me/saved-games', protect, saveGame);
 router.delete('/me/saved-games/:gameId', protect, unsaveGame);
+
+// --- THIS IS THE FIX: New routes for managing played games ---
+router.get('/me/played-games', protect, getPlayedGames);
+router.post('/me/played-games', protect, addPlayedGame);
 
 // Game Progress routes
 router.get('/me/gamedata/:gameIdentifier', protect, getGameData);

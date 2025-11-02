@@ -102,7 +102,7 @@ const GameLibraryPage = () => {
     // --- 2. CREATE A HANDLER FOR THE HERO GAME'S PLAY BUTTON ---
     const handlePlayHeroGame = () => {
         if (heroGame && heroGame.gameUrl && !heroGame.isComingSoon) {
-            startGame(heroGame._id);
+            startGame(heroGame);
         }
     };
 

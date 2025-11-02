@@ -36,7 +36,7 @@ const GameModal = ({ game, isOpen, onClose, onGameUpdate  }) => {
 
     const handlePlayClick = () => {
         if (isPlayable) {
-            startGame(_id);
+            startGame(game);
             onClose();
         }
     };

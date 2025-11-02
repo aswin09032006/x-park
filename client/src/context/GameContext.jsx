@@ -8,8 +8,10 @@ export const useGames = () => useContext(GameContext);
 export const GameProvider = ({ children }) => {
     const { isAuthenticated } = useAuth();
 
-    // --- SAVED GAMES STATE (FETCHED FROM BACKEND) ---
+    // --- SAVED GAMES (BOOKMARKS) ---
     const [savedGames, setSavedGames] = useState([]);
+    // --- PLAYED GAMES (HISTORY) ---
+    const [playedGames, setPlayedGames] = useState([]);
 
     const fetchSavedGames = useCallback(async () => {
         if (!isAuthenticated) return;
@@ -21,25 +23,36 @@ export const GameProvider = ({ children }) => {
         }
     }, [isAuthenticated]);
 
+    // --- THIS IS THE FIX: Fetch played games from the new endpoint ---
+    const fetchPlayedGames = useCallback(async () => {
+        if (!isAuthenticated) return;
+        try {
+            const gamesData = await api('/users/me/played-games');
+            setPlayedGames(gamesData);
+        } catch (error) {
+            console.error("Failed to fetch played games:", error);
+        }
+    }, [isAuthenticated]);
+
     useEffect(() => {
         if (isAuthenticated) {
             fetchSavedGames();
+            fetchPlayedGames();
         } else {
-            setSavedGames([]); // Clear games on logout
+            setSavedGames([]);
+            setPlayedGames([]);
         }
-    }, [isAuthenticated, fetchSavedGames]);
+    }, [isAuthenticated, fetchSavedGames, fetchPlayedGames]);
     
     const saveGame = async (game) => {
         try {
-            // Optimistic Update: Add to state immediately for a responsive UI
-            setSavedGames((prevGames) => {
-                if (prevGames.find(g => g._id === game._id)) return prevGames;
-                return [...prevGames, game];
+            setSavedGames((prev) => {
+                if (prev.find(g => g._id === game._id)) return prev;
+                return [...prev, game];
             });
             await api('/users/me/saved-games', 'POST', { gameId: game._id });
         } catch (error) {
             console.error("Failed to save game:", error);
-            // Revert on API failure
             setSavedGames((prev) => prev.filter((g) => g._id !== game._id));
         }
     };
@@ -47,12 +60,10 @@ export const GameProvider = ({ children }) => {
     const unsaveGame = async (gameId) => {
         const originalState = savedGames;
         try {
-            // Optimistic Update: Remove from state immediately
             setSavedGames((prev) => prev.filter((game) => game._id !== gameId));
             await api(`/users/me/saved-games/${gameId}`, 'DELETE');
         } catch (error) {
             console.error("Failed to unsave game:", error);
-            // Revert on API failure
             setSavedGames(originalState);
         }
     };
@@ -65,7 +76,6 @@ export const GameProvider = ({ children }) => {
             const items = window.localStorage.getItem('gameProgress');
             return items ? JSON.parse(items) : {};
         } catch (error) {
-            console.error("Could not parse game progress from localStorage", error);
             return {};
         }
     });
@@ -77,13 +87,28 @@ export const GameProvider = ({ children }) => {
     }, [gameProgress]);
 
     const updateGameProgress = (gameId, newProgress) => {
-        setGameProgress(prev => ({
-            ...prev,
-            [gameId]: Math.min(newProgress, 100)
-        }));
+        setGameProgress(prev => ({ ...prev, [gameId]: Math.min(newProgress, 100) }));
     };
 
-    const startGame = (gameId) => {
+    // --- THIS IS THE FIX: startGame now updates the `playedGames` list via the API ---
+    const startGame = async (game) => {
+        if (!game || !game._id) return;
+        const gameId = game._id;
+
+        // Add to played games list if it's not already there
+        if (!playedGames.some(p => p._id === gameId)) {
+            try {
+                // Optimistic update
+                setPlayedGames(prev => [...prev, game]);
+                await api('/users/me/played-games', 'POST', { gameId });
+            } catch (error) {
+                console.error("Failed to add to played games:", error);
+                // Revert on failure
+                setPlayedGames(prev => prev.filter(p => p._id !== gameId));
+            }
+        }
+
+        // --- The rest of the function remains the same ---
         if (gameProgress[gameId] === undefined) {
             updateGameProgress(gameId, 0);
         }
@@ -115,13 +140,12 @@ export const GameProvider = ({ children }) => {
 
     useEffect(() => {
         const timers = activeTimers.current;
-        return () => {
-            Object.values(timers).forEach(clearInterval);
-        };
+        return () => { Object.values(timers).forEach(clearInterval); };
     }, []);
 
     const value = {
         savedGames,
+        playedGames, // <-- Export new state
         saveGame,
         unsaveGame,
         isGameSaved,

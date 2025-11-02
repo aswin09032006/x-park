@@ -9,7 +9,8 @@ import GameModal from '../components/GameModal';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const { savedGames } = useGames();
+  // --- THIS IS THE FIX: Get both playedGames and savedGames from the context ---
+  const { savedGames, playedGames } = useGames();
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -133,7 +134,9 @@ const Dashboard = () => {
         : error ? ( <div className="text-center py-10"><p className="text-lg text-destructive">Error: {error}</p></div> ) 
         : (
             <>
-                <GameCarousel title="My Games" gameList={savedGames} exploreLink="/my-games" onCardClick={handleCardClick} />
+                {/* --- THIS IS THE FIX: Display separate carousels for played and saved games --- */}
+                <GameCarousel title="Recently Played" gameList={playedGames} exploreLink="/my-games" onCardClick={handleCardClick} />
+                <GameCarousel title="Saved Games" gameList={savedGames} exploreLink="/my-games" onCardClick={handleCardClick} />
                 <GameCarousel title="Recommendations" gameList={getRecommendations()} onCardClick={handleCardClick} />
             </>
         )}

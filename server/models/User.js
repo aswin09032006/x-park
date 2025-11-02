@@ -58,6 +58,11 @@ const UserSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Game'
     }],
+    // --- Added a new field to track played games separately ---
+    playedGames: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Game'
+    }],
     gameData: {
         type: Map,
         of: GameProgressSchema,

@@ -92,6 +92,36 @@ exports.unsaveGame = async (req, res) => {
     }
 };
 
+// --- THIS IS THE FIX: New controller to get played games ---
+exports.getPlayedGames = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).populate('playedGames');
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+        res.json(user.playedGames);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Server error' });
+    }
+};
+
+// --- THIS IS THE FIX: New controller to add a played game ---
+exports.addPlayedGame = async (req, res) => {
+    const { gameId } = req.body;
+    try {
+        await User.findByIdAndUpdate(
+            req.user.id,
+            { $addToSet: { playedGames: gameId } }
+        );
+        res.status(200).json({ msg: 'Game added to your played list.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Server error' });
+    }
+};
+
+
 /**
  * THIS IS THE DEFINITIVE FIX for GETTING data.
  * It uses .lean() to get a plain JavaScript object directly from the database,

@@ -14,7 +14,7 @@ const ModalGameCard = ({ game, onRateClick }) => {
 
     const handlePlayClick = () => {
         if (game.gameUrl && !game.isComingSoon) {
-            startGame(game._id);
+            startGame(game);
         }
     };
     

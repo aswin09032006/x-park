@@ -8,7 +8,8 @@ import { useGames } from '../context/GameContext';
 import { api } from '../services/api';
 
 const MyGames = () => {
-  const { savedGames, gameProgress, startGame } = useGames();
+  // --- THIS IS THE FIX: Get the new `playedGames` state from context ---
+  const { savedGames, playedGames, startGame } = useGames();
   const [allGames, setAllGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -21,12 +22,7 @@ const MyGames = () => {
     const fetchGames = async () => {
       try {
         const gamesData = await api('/games');
-        // ✅ Sort games: Live first
-        const sortedGames = gamesData.sort((a, b) => {
-          if (a.isComingSoon === b.isComingSoon) return 0;
-          return a.isComingSoon ? 1 : -1;
-        });
-        setAllGames(sortedGames);
+        setAllGames(gamesData);
       } catch (err) {
         setError(err.message || 'Failed to fetch games.');
       } finally {
@@ -56,43 +52,42 @@ const MyGames = () => {
   };
 
   const heroGame = useMemo(
-    () => allGames.find((g) => g.title === 'Network Shield'),
+    () => allGames.find((g) => g.title === 'Network Shield') || allGames.find(g => !g.isComingSoon),
     [allGames]
   );
+  
+  // --- THIS IS THE FIX: Filter logic for played games ---
+  const filteredPlayedGames = useMemo(() => {
+    return playedGames
+      .filter((game) => {
+        const matchesCategory =
+          selectedCategory === 'All' || game.category === selectedCategory;
+        const matchesSearch = game.title
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+        return matchesCategory && matchesSearch;
+      })
+      .sort((a, b) => (a.isComingSoon ? 1 : -1));
+  }, [playedGames, searchTerm, selectedCategory]);
+  
+  // --- THIS IS THE FIX: Filter logic for saved games ---
+  const filteredSavedGames = useMemo(() => {
+      return savedGames
+      .filter((game) => {
+        const matchesCategory =
+          selectedCategory === 'All' || game.category === selectedCategory;
+        const matchesSearch = game.title
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+        return matchesCategory && matchesSearch;
+      })
+      .sort((a, b) => (a.isComingSoon ? 1 : -1));
+  }, [savedGames, searchTerm, selectedCategory]);
 
-  const filteredInProgressGames = useMemo(() => {
-    const inProgressGameIds = Object.keys(gameProgress);
-    const inProgressGameObjects = allGames.filter((game) =>
-      inProgressGameIds.includes(game._id)
-    );
-
-    const filtered = inProgressGameObjects.filter((game) => {
-      const matchesCategory =
-        selectedCategory === 'All' || game.category === selectedCategory;
-      const matchesSearch = game.title
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-      return matchesCategory && matchesSearch;
-    });
-
-    // ✅ Sort Live games first
-    return filtered.sort((a, b) => {
-      if (a.isComingSoon === b.isComingSoon) return 0;
-      return a.isComingSoon ? 1 : -1;
-    });
-  }, [gameProgress, allGames, searchTerm, selectedCategory]);
-
-  const sortedSavedGames = useMemo(() => {
-    // ✅ Sort saved games: Live first
-    return [...savedGames].sort((a, b) => {
-      if (a.isComingSoon === b.isComingSoon) return 0;
-      return a.isComingSoon ? 1 : -1;
-    });
-  }, [savedGames]);
 
   const handlePlayHeroGame = () => {
     if (heroGame && heroGame.gameUrl) {
-      startGame(heroGame._id);
+      startGame(heroGame);
     }
   };
 
@@ -191,15 +186,16 @@ const MyGames = () => {
           </div>
         )}
 
+        {/* --- THIS IS THE FIX: Restore the two-carousel layout --- */}
         <div className="space-y-8">
           <GameCarousel
-            title="In progress"
-            gameList={filteredInProgressGames}
+            title="Recently Played"
+            gameList={filteredPlayedGames}
             onCardClick={handleGameCardClick}
           />
           <GameCarousel
-            title="Saved for Later"
-            gameList={sortedSavedGames}
+            title="Saved Games"
+            gameList={filteredSavedGames}
             onCardClick={handleGameCardClick}
           />
         </div>
