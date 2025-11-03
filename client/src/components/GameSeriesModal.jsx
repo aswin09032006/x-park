@@ -6,11 +6,12 @@ import { useGames } from '../context/GameContext';
 import RatingModal from './RatingModal';
 
 const ModalGameCard = ({ game, onRateClick }) => {
+    // The hook now provides the correct functions
     const { startGame, isGameInProgress, getGameProgress } = useGames();
     
-    // Note: game._id here is the ORIGINAL, valid ID
-    const isInProgress = isGameInProgress(game._id);
-    const progress = getGameProgress(game._id);
+    // Pass the full `game` object to the new functions
+    const isInProgress = isGameInProgress(game);
+    const progress = getGameProgress(game);
 
     const handlePlayClick = () => {
         if (game.gameUrl && !game.isComingSoon) {

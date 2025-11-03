@@ -1,9 +1,15 @@
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { api } from '../services/api';
 
 const GameContext = createContext();
 export const useGames = () => useContext(GameContext);
+
+// --- THE FIX: Define total levels for progress calculation ---
+const GAME_LEVEL_COUNTS = {
+    'cyber-security': 1, // Based on description: "10 fast-paced mini-games"
+    'data-forge': 5,      // Based on game implementation: NUM_LEVELS = 5
+};
 
 export const GameProvider = ({ children }) => {
     const { isAuthenticated } = useAuth();
@@ -12,6 +18,9 @@ export const GameProvider = ({ children }) => {
     const [savedGames, setSavedGames] = useState([]);
     // --- PLAYED GAMES (HISTORY) ---
     const [playedGames, setPlayedGames] = useState([]);
+
+    // --- THE FIX: State to hold real progress data from the backend ---
+    const [userGameData, setUserGameData] = useState({});
 
     const fetchSavedGames = useCallback(async () => {
         if (!isAuthenticated) return;
@@ -34,15 +43,28 @@ export const GameProvider = ({ children }) => {
         }
     }, [isAuthenticated]);
 
+    // --- THE FIX: Fetch real game progress data ---
+    const fetchUserProgress = useCallback(async () => {
+        if (!isAuthenticated) return;
+        try {
+            const progressData = await api('/users/me/gamedata');
+            setUserGameData(progressData);
+        } catch (error) {
+            console.error("Failed to fetch user game progress:", error);
+        }
+    }, [isAuthenticated]);
+
     useEffect(() => {
         if (isAuthenticated) {
             fetchSavedGames();
             fetchPlayedGames();
+            fetchUserProgress(); // <-- Call the new fetch function
         } else {
             setSavedGames([]);
             setPlayedGames([]);
+            setUserGameData({}); // <-- Clear progress on logout
         }
-    }, [isAuthenticated, fetchSavedGames, fetchPlayedGames]);
+    }, [isAuthenticated, fetchSavedGames, fetchPlayedGames, fetchUserProgress]);
     
     const saveGame = async (game) => {
         try {
@@ -70,78 +92,53 @@ export const GameProvider = ({ children }) => {
 
     const isGameSaved = (gameId) => !!savedGames.find(game => game._id === gameId);
 
-    // --- GAME PROGRESS STATE (remains in localStorage) ---
-    const [gameProgress, setGameProgress] = useState(() => {
-        try {
-            const items = window.localStorage.getItem('gameProgress');
-            return items ? JSON.parse(items) : {};
-        } catch (error) {
-            return {};
+    // --- THE FIX: New calculation function ---
+    const getGameProgress = (game) => {
+        // The game identifier is the last part of its URL, e.g., "cyber-security"
+        const gameIdentifier = game.gameUrl?.split('/').pop();
+
+        if (!gameIdentifier || !GAME_LEVEL_COUNTS[gameIdentifier] || !userGameData[gameIdentifier]) {
+            return 0; // Return 0 if game isn't trackable or has no progress
         }
-    });
-    
-    const activeTimers = useRef({});
+        
+        const progress = userGameData[gameIdentifier];
+        const completedLevels = progress.completedLevels ? Object.keys(progress.completedLevels).length : 0;
+        const totalLevels = GAME_LEVEL_COUNTS[gameIdentifier];
+        
+        if (totalLevels === 0) return 0;
 
-    useEffect(() => {
-        window.localStorage.setItem('gameProgress', JSON.stringify(gameProgress));
-    }, [gameProgress]);
-
-    const updateGameProgress = (gameId, newProgress) => {
-        setGameProgress(prev => ({ ...prev, [gameId]: Math.min(newProgress, 100) }));
+        return Math.round((completedLevels / totalLevels) * 100);
     };
 
-    // --- THIS IS THE FIX: startGame now updates the `playedGames` list via the API ---
+    // --- THE FIX: Check for any progress data ---
+    const isGameInProgress = (game) => {
+        const gameIdentifier = game.gameUrl?.split('/').pop();
+        if (!gameIdentifier || !userGameData[gameIdentifier]) return false;
+        
+        const progress = userGameData[gameIdentifier];
+        const completedLevels = progress.completedLevels ? Object.keys(progress.completedLevels).length : 0;
+        
+        // A game is "in progress" if at least one level is done but not all
+        const totalLevels = GAME_LEVEL_COUNTS[gameIdentifier] || 0;
+        return completedLevels > 0 && completedLevels < totalLevels;
+    };
+    
+    // --- THE FIX: Simplified startGame, no more timers ---
     const startGame = async (game) => {
         if (!game || !game._id) return;
-        const gameId = game._id;
 
-        // Add to played games list if it's not already there
-        if (!playedGames.some(p => p._id === gameId)) {
+        // Logic to add to playedGames list (existing)
+        if (!playedGames.some(p => p._id === game._id)) {
             try {
-                // Optimistic update
                 setPlayedGames(prev => [...prev, game]);
-                await api('/users/me/played-games', 'POST', { gameId });
-            } catch (error) {
+                await api('/users/me/played-games', 'POST', { gameId: game._id });
+            } catch (error)
+ {
                 console.error("Failed to add to played games:", error);
-                // Revert on failure
-                setPlayedGames(prev => prev.filter(p => p._id !== gameId));
+                setPlayedGames(prev => prev.filter(p => p._id !== game._id));
             }
         }
-
-        // --- The rest of the function remains the same ---
-        if (gameProgress[gameId] === undefined) {
-            updateGameProgress(gameId, 0);
-        }
-        if (activeTimers.current[gameId]) clearInterval(activeTimers.current[gameId]);
-
-        activeTimers.current[gameId] = setInterval(() => {
-            setGameProgress(currentProgress => {
-                const progress = currentProgress[gameId] || 0;
-                if (progress >= 100) {
-                    clearInterval(activeTimers.current[gameId]);
-                    delete activeTimers.current[gameId];
-                    return currentProgress;
-                }
-                const newProgress = progress + 5;
-                return { ...currentProgress, [gameId]: Math.min(newProgress, 100) };
-            });
-        }, 2000);
     };
-
-    const stopGame = (gameId) => {
-        if (activeTimers.current[gameId]) {
-            clearInterval(activeTimers.current[gameId]);
-            delete activeTimers.current[gameId];
-        }
-    };
-    
-    const isGameInProgress = (gameId) => gameProgress[gameId] !== undefined;
-    const getGameProgress = (gameId) => gameProgress[gameId] || 0;
-
-    useEffect(() => {
-        const timers = activeTimers.current;
-        return () => { Object.values(timers).forEach(clearInterval); };
-    }, []);
 
     const value = {
         savedGames,
@@ -149,12 +146,10 @@ export const GameProvider = ({ children }) => {
         saveGame,
         unsaveGame,
         isGameSaved,
-        gameProgress,
         startGame,
-        stopGame,
-        updateGameProgress,
         isGameInProgress,
         getGameProgress,
+        fetchUserProgress, // <-- Expose fetch function for updates
     };
 
     return (

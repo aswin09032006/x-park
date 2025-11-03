@@ -44,7 +44,9 @@ const UserSchema = new Schema({
 
     displayName: { type: String, default: '' },
     city: { type: String, default: '' },
-    state: { type: String, default: '' },
+    county: { 
+            type: String,
+        },    
     studentId: { type: String, default: '' },
     yearGroup: { type: Number, default: 0 },
     landingPagePreference: { type: String, default: 'Dashboard' },

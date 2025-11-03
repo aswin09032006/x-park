@@ -13,8 +13,8 @@ exports.getMe = async (req, res) => {
 };
 
 exports.updateMe = async (req, res) => {
-    // --- THIS IS THE FIX: Removed ageGroup ---
-    const { firstName, lastName, displayName, city, state, school, studentId, yearGroup, landingPagePreference } = req.body;
+    // --- THIS IS THE FIX: Removed ageGroup and changed 'state' to 'county' ---
+    const { firstName, lastName, displayName, city, county, school, studentId, yearGroup, landingPagePreference } = req.body;
     
     try {
         const user = await User.findById(req.user.id);
@@ -27,7 +27,7 @@ exports.updateMe = async (req, res) => {
         if (lastName !== undefined) fieldsToUpdate.lastName = lastName;
         if (displayName !== undefined) fieldsToUpdate.displayName = displayName;
         if (city !== undefined) fieldsToUpdate.city = city;
-        if (state !== undefined) fieldsToUpdate.state = state;
+        if (county !== undefined) fieldsToUpdate.county = county; // Changed from state to county
         if (school !== undefined) fieldsToUpdate.school = school;
         if (studentId !== undefined) fieldsToUpdate.studentId = studentId;
         if (yearGroup !== undefined) fieldsToUpdate.yearGroup = yearGroup;

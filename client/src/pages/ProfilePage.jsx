@@ -63,13 +63,12 @@ const ProfilePage = () => {
 
     useEffect(() => {
         if (user) {
-            // --- THIS IS THE FIX: Removed ageGroup ---
             setFormData({
                 firstName: user.firstName || '',
                 lastName: user.lastName || '',
                 displayName: user.displayName || '',
                 city: user.city || '',
-                state: user.state || '',
+                county: user.county || '', // Changed from state to county
                 school: user.school || '',
                 studentId: user.studentId || '',
                 yearGroup: String(user.yearGroup ?? ''),
@@ -178,13 +177,12 @@ const ProfilePage = () => {
 
                 {isEditing ? (
                     <form onSubmit={handleSaveChanges}>
-                        {/* --- THIS IS THE FIX: Removed ageGroup field --- */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12">
                             <EditField label="First Name" name="firstName" value={formData.firstName} onChange={handleInputChange} />
                             <EditField label="Last Name" name="lastName" value={formData.lastName} onChange={handleInputChange} />
                             <EditField label="Display Name" name="displayName" value={formData.displayName} onChange={handleInputChange} />
                             <EditField label="City" name="city" value={formData.city} onChange={handleInputChange} />
-                            <EditField label="State" name="state" value={formData.state} onChange={handleInputChange} />
+                            <EditField label="County" name="county" value={formData.county} onChange={handleInputChange} /> {/* Changed label and name to County */}
                             <EditField label="School" name="school" value={formData.school} onChange={handleInputChange} />
                             <EditField label="Student ID" name="studentId" value={formData.studentId} onChange={handleInputChange} />
                             <div className="mb-6">
@@ -214,14 +212,13 @@ const ProfilePage = () => {
                     </form>
                 ) : (
                     <>
-                        {/* --- THIS IS THE FIX: Removed ageGroup field --- */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12">
                             <InfoField label="First Name" value={user.firstName} />
                             <InfoField label="Last Name" value={user.lastName} />
                             <InfoField label="Display Name" value={user.displayName || user.username} />
                             <InfoField label="Email" value={user.email} canCopy />
                             <InfoField label="City" value={user.city} />
-                            <InfoField label="State" value={user.state} />
+                            <InfoField label="County" value={user.county} /> {/* Changed label to County */}
                             <InfoField label="School" value={user.school} />
                             <InfoField label="Student ID" value={user.studentId} canCopy />
                             <InfoField label="Year group" value={user.yearGroup} />
