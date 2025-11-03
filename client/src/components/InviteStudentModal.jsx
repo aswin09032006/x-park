@@ -5,10 +5,10 @@ import { Plus } from 'lucide-react';
 import EditableEmail, { defaultSubject, defaultBody } from './EditableEmail'; // <-- IMPORT NEW COMPONENT AND DEFAULTS
 
 const InviteStudentModal = ({ isOpen, onClose, onSuccess }) => {
+    // --- THIS IS THE FIX: Removed phoneNumber ---
     const [formData, setFormData] = useState({
-        firstName: '', lastName: '', email: '', phoneNumber: '', yearGroup: ''
+        firstName: '', lastName: '', email: '', yearGroup: ''
     });
-    // --- State for the editable email ---
     const [emailSubject, setEmailSubject] = useState(defaultSubject);
     const [emailBody, setEmailBody] = useState(defaultBody);
 
@@ -21,7 +21,8 @@ const InviteStudentModal = ({ isOpen, onClose, onSuccess }) => {
     };
 
     const resetForm = () => {
-        setFormData({ firstName: '', lastName: '', email: '', phoneNumber: '', yearGroup: '' });
+        // --- THIS IS THE FIX: Removed phoneNumber ---
+        setFormData({ firstName: '', lastName: '', email: '', yearGroup: '' });
         setEmailSubject(defaultSubject);
         setEmailBody(defaultBody);
         setSuccess('');
@@ -32,7 +33,6 @@ const InviteStudentModal = ({ isOpen, onClose, onSuccess }) => {
         e.preventDefault();
         setLoading(true); setError(''); setSuccess('');
         try {
-            // --- Include the email content in the payload ---
             const payload = { ...formData, emailSubject, emailBody };
             const data = await api('/admin/invite-student', 'POST', payload);
 
@@ -62,18 +62,26 @@ const InviteStudentModal = ({ isOpen, onClose, onSuccess }) => {
                         <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} className="w-full bg-[#222] border border-gray-700 rounded-md p-2" required />
                     </div>
                 </div>
-                <div>
-                    <label className="block text-sm text-gray-400 mb-1">Email</label>
-                    <input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full bg-[#222] border border-gray-700 rounded-md p-2" required />
-                </div>
+                {/* --- THIS IS THE FIX: Converted to a two-column layout and removed phoneNumber --- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm text-gray-400 mb-1">Phone Number (Optional)</label>
-                        <input type="tel" name="phoneNumber" value={formData.phoneNumber} onChange={handleInputChange} className="w-full bg-[#222] border border-gray-700 rounded-md p-2" />
+                        <label className="block text-sm text-gray-400 mb-1">Email</label>
+                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full bg-[#222] border border-gray-700 rounded-md p-2" required />
                     </div>
                     <div>
                         <label className="block text-sm text-gray-400 mb-1">Grade / Year Group</label>
-                        <input type="number" name="yearGroup" value={formData.yearGroup} onChange={handleInputChange} className="w-full bg-[#222] border border-gray-700 rounded-md p-2" required />
+                        <select 
+                            name="yearGroup" 
+                            value={formData.yearGroup} 
+                            onChange={handleInputChange} 
+                            className="w-full bg-[#222] border border-gray-700 rounded-md p-2 appearance-none" 
+                            required
+                        >
+                            <option value="">Select Year...</option>
+                            {Array.from({ length: 7 }, (_, i) => i + 7).map(year => (
+                                <option key={year} value={year}>Year {year}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
                  
@@ -82,7 +90,6 @@ const InviteStudentModal = ({ isOpen, onClose, onSuccess }) => {
                     setSubject={setEmailSubject}
                     body={emailBody}
                     setBody={setEmailBody}
-                    // This new prop makes the preview more realistic
                     studentFirstNamePreview={formData.firstName || "[Student's First Name]"}
                 />
                 

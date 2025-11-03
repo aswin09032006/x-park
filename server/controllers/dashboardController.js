@@ -35,7 +35,8 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
         const gamePlayCounts = {};
 
         for (const student of students) {
-            let studentTotalBadges = 0; // <-- FIX: Use a new variable for the student's total
+            let studentTotalBadges = 0;
+            let studentTotalCertificates = 0; // <-- FIX: Initialize certificate counter
             let studentScore = 0;
             let hasBadge = false;
             let studentAttempts = 0;
@@ -43,8 +44,12 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
             if (student.gameData && student.gameData.size > 0) {
                 student.gameData.forEach((progress, gameId) => {
                     const gameBadges = progress.badges ? progress.badges.size : 0;
-                    studentTotalBadges += gameBadges; // <-- FIX: Aggregate all badges for the student
+                    studentTotalBadges += gameBadges;
                     if (gameBadges > 0) hasBadge = true;
+
+                    // --- THIS IS THE FIX: Sum actual certificates earned ---
+                    const gameCertificates = progress.certificates ? progress.certificates.size : 0;
+                    studentTotalCertificates += gameCertificates;
                     
                     if (progress.highScores) {
                         progress.highScores.forEach(score => studentScore += score);
@@ -59,21 +64,19 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
             }
 
             if (hasBadge) stats.studentsWithBadges++;
-            stats.totalBadges += studentTotalBadges; // Add student's total to the grand total
+            stats.totalBadges += studentTotalBadges;
             
-            // --- THIS IS THE FIX ---
-            // Calculate certificates based on the student's total badges across all games.
-            const studentTotalCertificates = Math.floor(studentTotalBadges / 3);
+            // --- THIS IS THE FIX: Use the summed total, not a calculation ---
             stats.totalCertificates += studentTotalCertificates;
-            
             if (studentTotalCertificates > 0) stats.studentsWithCertificates++;
+
             stats.totalGameAttempts += studentAttempts;
 
             stats.topPerformers.push({
                 _id: student._id,
                 name: student.username,
                 yearGroup: student.yearGroup,
-                certificates: studentTotalCertificates, // <-- FIX: Use the correct total
+                certificates: studentTotalCertificates,
                 badges: studentTotalBadges,
                 score: studentScore
             });
@@ -185,6 +188,8 @@ exports.getSchoolGameProgress = async (req, res) => {
                     if (correctGameId && gameStatsMap.has(correctGameId)) {
                         const stats = gameStatsMap.get(correctGameId);
                         stats.badges += progress.badges ? progress.badges.size : 0;
+                        // --- THIS IS THE FIX: Sum actual certificates ---
+                        stats.certificates += progress.certificates ? progress.certificates.size : 0;
                         
                         if (progress.completedLevels) {
                             stats.attempts += progress.completedLevels.size;
@@ -194,10 +199,8 @@ exports.getSchoolGameProgress = async (req, res) => {
             }
         }
 
-        const results = Array.from(gameStatsMap.values()).map(game => {
-            game.certificates = Math.floor(game.badges / 3);
-            return game;
-        });
+        // --- THIS IS THE FIX: Remove the incorrect calculation ---
+        const results = Array.from(gameStatsMap.values());
 
         res.json(results);
 

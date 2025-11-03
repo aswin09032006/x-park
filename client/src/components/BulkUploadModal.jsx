@@ -61,32 +61,23 @@ const handleSubmit = async (e) => {
 };
 
 /**
- * Generates and downloads a CSV file containing rows that failed to upload,
- * including a reason for the failure. This function is robustly mapped to the
- * required CSV input format.
+ * Generates and downloads a CSV file containing rows that failed to upload.
  */
 const handleDownloadErrorCsv = () => {
     if (failedRows.length === 0) return;
 
-    // Define the headers for the output file to match the required input format.
-    const headers = ['firstname', 'lastname', 'email', 'phonenumber', 'yeargroup', 'reason'];
-    
-    // Start CSV content with the header row.
+    // --- THIS IS THE FIX: Removed phoneNumber ---
+    const headers = ['firstname', 'lastname', 'email', 'yeargroup', 'reason'];
     let csvContent = headers.join(',') + '\n';
 
-    // Process each failed row.
     failedRows.forEach(row => {
-        // Map the data from the row object to the CSV headers.
-        // This handles potential case differences (e.g., row.firstName -> 'firstname').
         const values = [
             row.firstName || row.firstname || '',
             row.lastName || row.lastname || '',
             row.email || '',
-            row.phoneNumber || row.phonenumber || '',
             row.yearGroup || row.yeargroup || '',
             row.reason || 'Unknown error'
         ].map(value => {
-            // Sanitize each value to handle commas and quotes within fields.
             let sanitizedValue = String(value).replace(/"/g, '""');
             if (sanitizedValue.includes(',')) {
                 sanitizedValue = `"${sanitizedValue}"`;
@@ -96,7 +87,6 @@ const handleDownloadErrorCsv = () => {
         csvContent += values.join(',') + '\n';
     });
 
-    // Create a Blob and trigger the download.
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     if (link.download !== undefined) {
@@ -113,8 +103,9 @@ const handleDownloadErrorCsv = () => {
 return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Bulk Invite Students">
         <div className='max-h-[70vh] space-y-6 y-auto overflow-y-auto pr-2'>
+        {/* --- THIS IS THE FIX: Updated instructions --- */}
         <p className="text-gray-400 text-sm mb-4">
-            Upload a CSV with headers: `firstname`, `lastname`, `email` (required), and `phoneNumber`, `yearGroup` (optional).
+            Upload a CSV with headers: `firstname`, `lastname`, `email` (required), and `yearGroup` (optional, must be a number from 7 to 13).
         </p>
         <form onSubmit={handleSubmit} className="space-y-6">
             <label className="w-full flex items-center gap-3 px-4 py-3 bg-[#222] rounded-md cursor-pointer border border-gray-700">
@@ -136,7 +127,6 @@ return (
             </button>
         </form>
         
-        {/* --- THIS SECTION DISPLAYS THE RESULT AND THE DOWNLOAD BUTTON --- */}
         {result && (
             <div className={`mt-4 text-sm p-4 rounded-md ${result.success && failedRows.length === 0 ? 'bg-green-500/20 text-green-300' : (failedRows.length > 0 ? 'bg-yellow-500/20 text-yellow-300' : 'bg-red-500/20 text-red-400')}`}>
                 <p className="font-bold mb-2">{result.msg}</p>

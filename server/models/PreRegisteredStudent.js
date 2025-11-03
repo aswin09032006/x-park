@@ -9,7 +9,6 @@ const PreRegisteredStudentSchema = new mongoose.Schema({
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     username: { type: String, trim: true, default: null },
-    phoneNumber: { type: String, default: '' },
     yearGroup: { type: Number, default: null },
 
     registrationToken: { 

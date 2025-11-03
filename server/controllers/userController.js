@@ -13,8 +13,8 @@ exports.getMe = async (req, res) => {
 };
 
 exports.updateMe = async (req, res) => {
-    // --- UPDATED: Use firstName, lastName ---
-    const { firstName, lastName, displayName, phoneNumber, city, state, school, ageGroup, studentId, yearGroup, landingPagePreference } = req.body;
+    // --- THIS IS THE FIX: Removed ageGroup ---
+    const { firstName, lastName, displayName, city, state, school, studentId, yearGroup, landingPagePreference } = req.body;
     
     try {
         const user = await User.findById(req.user.id);
@@ -26,11 +26,9 @@ exports.updateMe = async (req, res) => {
         if (firstName !== undefined) fieldsToUpdate.firstName = firstName;
         if (lastName !== undefined) fieldsToUpdate.lastName = lastName;
         if (displayName !== undefined) fieldsToUpdate.displayName = displayName;
-        if (phoneNumber !== undefined) fieldsToUpdate.phoneNumber = phoneNumber;
         if (city !== undefined) fieldsToUpdate.city = city;
         if (state !== undefined) fieldsToUpdate.state = state;
         if (school !== undefined) fieldsToUpdate.school = school;
-        if (ageGroup !== undefined) fieldsToUpdate.ageGroup = ageGroup;
         if (studentId !== undefined) fieldsToUpdate.studentId = studentId;
         if (yearGroup !== undefined) fieldsToUpdate.yearGroup = yearGroup;
         if (landingPagePreference !== undefined) fieldsToUpdate.landingPagePreference = landingPagePreference;
@@ -43,6 +41,22 @@ exports.updateMe = async (req, res) => {
 
         res.json(updatedUser);
         
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Server error' });
+    }
+};
+
+// --- THIS IS THE FIX: New controller to handle completing the first-login onboarding step ---
+exports.completeOnboarding = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+        user.isFirstLogin = false;
+        await user.save();
+        res.status(200).json({ msg: 'Onboarding complete.' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ msg: 'Server error' });
@@ -166,7 +180,7 @@ exports.getGameData = async (req, res) => {
  */
 exports.updateGameData = async (req, res) => {
     const { gameIdentifier } = req.params;
-    const { stage, score, badge, xp, status } = req.body;
+    const { stage, score, badge, xp, status, certificate } = req.body;
 
     console.log(`\n- - - - - [POST /gamedata] [START] Received save request from user '${req.user.id}' for game '${gameIdentifier}'. - - - - -`);
     console.log(`[POST /gamedata] [DATA] Raw payload:`, JSON.stringify(req.body, null, 2));
@@ -190,7 +204,8 @@ exports.updateGameData = async (req, res) => {
                 completedLevels: new Map(),
                 highScores: new Map(),
                 badges: new Map(),
-                xp: new Map()
+                xp: new Map(),
+                certificates: new Map()
             });
         }
         const progress = user.gameData.get(gameIdentifier);
@@ -208,6 +223,9 @@ exports.updateGameData = async (req, res) => {
         if (xp !== undefined) {
             const existingXp = progress.xp.get(stageStr) || 0;
             progress.xp.set(stageStr, existingXp + xp);
+        }
+        if (certificate) {
+            progress.certificates.set(stageStr, true);
         }
 
         console.log(`[POST /gamedata] [STATE AFTER MODIFICATION]`, JSON.stringify(progress.toObject(), null, 2));

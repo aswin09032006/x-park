@@ -56,13 +56,8 @@ const AdminDashboard = () => {
         return () => clearInterval(intervalId);
     }, [fetchData]);
 
-    const uniqueYearGroups = useMemo(() => {
-        if (!data?.stats?.topPerformers) return [];
-        const years = data.stats.topPerformers
-            .map(p => p.yearGroup)
-            .filter(y => y !== null && y !== undefined);
-        return [...new Set(years)].sort((a, b) => a - b);
-    }, [data]);
+    // --- THIS IS THE FIX: Use a static list for year group options ---
+    const yearGroupOptions = Array.from({ length: 7 }, (_, i) => i + 7);
 
     const processedPerformers = useMemo(() => {
         if (!data?.stats?.topPerformers) return [];
@@ -147,11 +142,12 @@ const AdminDashboard = () => {
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
                                     <input type="text" placeholder="Search name..." className="bg-[#222] border border-gray-700 rounded-lg py-1.5 pl-9 pr-3 text-xs w-full md:w-32 lg:w-40" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                                 </div>
+                                {/* --- THIS IS THE FIX --- */}
                                 <div className="relative">
                                     <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
                                     <select className="bg-[#222] border border-gray-700 rounded-lg py-1.5 pl-9 pr-3 text-xs appearance-none" value={filterYearGroup} onChange={e => setFilterYearGroup(e.target.value)}>
                                         <option value="All">All Years</option>
-                                        {uniqueYearGroups.map(year => (<option key={year} value={year}>Year {year}</option>))}
+                                        {yearGroupOptions.map(year => (<option key={year} value={year}>Year {year}</option>))}
                                     </select>
                                 </div>
                                 {/* The sort dropdown has been removed from here */}

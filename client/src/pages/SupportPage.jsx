@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Phone, MapPin, Mail } from 'lucide-react';
+import { Phone, MapPin, Mail, Linkedin } from 'lucide-react';
 import { api } from '../services/api';
 
 const SupportPage = () => {
@@ -66,19 +66,24 @@ const SupportPage = () => {
                 <section>
                     <h2 className="text-xl font-medium mb-8">Contact Us</h2>
                     <div className="space-y-6">
-                     <ContactInfo 
-                        icon={Phone} 
-                        text="+44 20 3051 1448"
-                        href="tel:+442030511448"
+                        <ContactInfo 
+                            icon={Phone} 
+                            text="+44 20 3051 1448"
+                            href="tel:+442030511448"
                         />
                         <ContactInfo 
-                        icon={MapPin} 
-                        text="XPARK GAMES LTD, 20 Wenlock Road, London, N1 7GU, United Kingdom"
+                            icon={MapPin} 
+                            text="XPARK GAMES LTD, 20 Wenlock Road, London, N1 7GU, United Kingdom"
                         />
                         <ContactInfo 
                             icon={Mail} 
                             text="info@xparkgames.com"
                             href="mailto:info@xparkgames.com"
+                        />
+                        <ContactInfo 
+                            icon={Linkedin} 
+                            text="Follow us on LinkedIn"
+                            href="https://www.linkedin.com/company/xpark-games-ltd/?viewAsMember=true"
                         />
                     </div>
                 </section>

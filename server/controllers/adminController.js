@@ -25,21 +25,69 @@ const sendInvitationEmail = async (
         : `Your Invitation to Join XPARK`;
 
     const defaultBody = `
-        <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
-            <h2 style="color: #2c3e50;">Dear {{studentFirstName}},</h2>
-            <p>You have been invited by your administrator at <strong>{{schoolName}}</strong> to join the XPARK platform.</p>
-            <p>To activate your account and set your password, please click the button below:</p>
-            <a href="{{registrationLink}}" style="display:inline-block;background-color:#007bff;color:#fff;padding:12px 24px;text-decoration:none;border-radius:5px;font-weight:bold;">
-                Activate Account
-            </a>
-            <p style="margin-top:20px;font-size:12px;color:#777;">
-                If the button above does not work, please copy and paste the following link into your web browser:<br>
-                <a href="{{registrationLink}}">{{registrationLink}}</a>
-            </p>
-            <p style="font-size:12px;color:#777;">Please note: This link will expire in 14 days.</p>
-            <p style="margin-top:20px;">We look forward to welcoming you to XPARK.</p>
-            <p style="margin-top:10px;">Best regards,<br><strong>The XPARK Team</strong></p>
+        <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <!-- Header with Banner -->
+        <div style="background-color: #1a1a1a; text-align: center;">
+            <img src="https://res.cloudinary.com/dcjyydmzs/image/upload/v1762106928/WhatsApp_Image_2025-11-02_at_23.25.36_ff066a38_hvxjnb.jpg" alt="XPARK Banner" style="max-width: 100%; height: auto; display: block;" />
         </div>
+        
+        <!-- Main Content -->
+        <div style="padding: 40px 30px;">
+            <h2 style="color: #2c3e50; margin: 0 0 20px 0; font-size: 24px;">Dear {{studentFirstName}},</h2>
+            
+            <p style="color: #333; line-height: 1.6; margin: 0 0 16px 0; font-size: 16px;">
+                You have been invited by your school administrator at <strong>{{schoolName}}</strong> to join the XPARK platform.
+            </p>
+            
+            <p style="color: #333; line-height: 1.6; margin: 0 0 16px 0; font-size: 16px;">
+                XPARK Games helps you explore the world of digital careers through fun, interactive games and discover the future that fits you best.
+            </p>
+            
+            <p style="color: #333; line-height: 1.6; margin: 0 0 24px 0; font-size: 16px;">
+                To activate your account and set your password, please click the button below:
+            </p>
+            
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 0 0 24px 0;">
+                <a href="{{registrationLink}}" style="display: inline-block; background-color: #007bff; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Activate Account</a>
+            </div>
+            
+            <!-- Alternative Link -->
+            <div style="background-color: #f8f9fa; border-radius: 6px; padding: 16px; margin: 0 0 16px 0;">
+                <p style="margin: 0 0 8px 0; font-size: 13px; color: #666;">
+                    If the button above doesn't work, copy and paste this link into your web browser:
+                </p>
+                <p style="margin: 0; font-size: 13px; word-break: break-all;">
+                    <a href="{{registrationLink}}" style="color: #007bff; text-decoration: underline;">{{registrationLink}}</a>
+                </p>
+            </div>
+            
+            <!-- Expiry Notice -->
+            <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 0 0 24px 0;">
+                <p style="margin: 0; font-size: 14px; color: #856404;">
+                    <strong>Important:</strong> This activation link will expire in 14 days.
+                </p>
+            </div>
+            
+            <p style="color: #333; line-height: 1.6; margin: 0 0 16px 0; font-size: 16px;">
+                We look forward to welcoming you to XPARK!
+            </p>
+            
+            <p style="color: #333; line-height: 1.6; margin: 0; font-size: 16px;">
+                Best regards,<br>
+                <strong>The XPARK Games Team</strong>
+            </p>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f8f9fa; padding: 20px 30px; border-top: 1px solid #e9ecef;">
+            <p style="margin: 0; font-size: 12px; color: #6c757d; text-align: center; line-height: 1.5;">
+                This email was sent by XPARK Games. If you believe you received this email in error, please contact your school administrator.
+            </p>
+        </div>
+    </div>
+</div>
     `;
 
     // --- Merge templates with variables ---
@@ -142,11 +190,11 @@ exports.bulkAddStudents = async (req, res) => {
     fs.createReadStream(req.file.path)
         .pipe(csv({ mapHeaders: ({ header }) => header.trim().toLowerCase() }))
         .on('data', (row) => {
+            // --- THIS IS THE FIX: Removed phoneNumber ---
             studentsFromCsv.push({
                 email: row.email || '',
                 firstName: row.firstname || '',
                 lastName: row.lastname || '',
-                phoneNumber: row.phonenumber || '',
                 yearGroup: row.yeargroup || '',
             });
         })
@@ -250,7 +298,8 @@ exports.bulkAddStudents = async (req, res) => {
 // @access  Private (School Admin)
 // ============================================================
 exports.inviteStudent = async (req, res) => {
-    const { email, firstName, lastName, phoneNumber, yearGroup, emailSubject, emailBody } = req.body;
+    // --- THIS IS THE FIX: Removed phoneNumber ---
+    const { email, firstName, lastName, yearGroup, emailSubject, emailBody } = req.body;
 
     try {
         const school = await School.findById(req.user.school).select('name');
@@ -275,7 +324,7 @@ exports.inviteStudent = async (req, res) => {
 
         const newStudent = new PreRegisteredStudent({
             email, firstName, lastName, username,
-            phoneNumber, yearGroup, school: req.user.school,
+            yearGroup, school: req.user.school,
         });
 
         const token = newStudent.getRegistrationToken();
@@ -416,6 +465,8 @@ exports.getStudentGameData = async (req, res) => {
         const results = [];
         for (const [gameId, progress] of student.gameData.entries()) {
             const badges = progress.badges ? progress.badges.size : 0;
+            // --- THIS IS THE FIX: Sum actual certificates ---
+            const certificates = progress.certificates ? progress.certificates.size : 0;
             const score = progress.highScores
                 ? Array.from(progress.highScores.values()).reduce((a, b) => a + b, 0)
                 : 0;
@@ -424,7 +475,7 @@ exports.getStudentGameData = async (req, res) => {
                 gameTitle: gameMap.get(gameId) || 'Unknown Game',
                 gamesPlayed: progress.completedLevels ? progress.completedLevels.size : 0,
                 badges,
-                certificates: Math.floor(badges / 3),
+                certificates, // Use the correct value
                 score,
             });
         }

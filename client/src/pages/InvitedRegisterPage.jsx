@@ -12,8 +12,7 @@ const InvitedRegisterPage = () => {
     const [error, setError] = useState('');
     const [studentData, setStudentData] = useState(null);
 
-    // --- UPDATED: Removed username state ---
-    const [phoneNumber, setPhoneNumber] = useState('');
+    // --- THIS IS THE FIX: Removed phoneNumber state ---
     const [password, setPassword] = useState('');
     const [rePassword, setRePassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -23,7 +22,6 @@ const InvitedRegisterPage = () => {
             try {
                 const data = await publicApi(`/auth/verify-invite/${token}`);
                 setStudentData(data);
-                if (data.phoneNumber) setPhoneNumber(data.phoneNumber);
             } catch (err) {
                 setError(err.message || 'This invitation link is invalid or has expired.');
             } finally {
@@ -44,8 +42,8 @@ const InvitedRegisterPage = () => {
         setError('');
 
         try {
-            // --- UPDATED: Payload no longer includes username ---
-            const payload = { password, phoneNumber };
+            // --- THIS IS THE FIX: Payload no longer includes phoneNumber ---
+            const payload = { password };
             const response = await publicApi(`/auth/complete-invite/${token}`, 'POST', payload);
             alert(response.msg);
             navigate('/');
@@ -72,19 +70,13 @@ const InvitedRegisterPage = () => {
             {studentData && (
                 <form onSubmit={handleSubmit}>
                     <h2 className="text-3xl font-bold mb-2">Welcome, {studentData.firstName} {studentData.lastName}!</h2>
-                    {/* --- THIS IS THE FIX: Simplified welcome message --- */}
                     <p className="text-muted-foreground mb-8">
                         Your username will be <span className="font-bold text-cyan-400">{studentData.username}</span>. 
                         Please complete your registration below to activate your account.
                     </p>
                     
+                    {/* --- THIS IS THE FIX: Removed phoneNumber input field --- */}
                     <div className="space-y-4">
-                        {/* --- UPDATED: Removed conditional username input --- */}
-                        <div>
-                            <label className="block text-sm text-muted-foreground mb-2" htmlFor="phoneNumber">Phone Number (Optional)</label>
-                            <input id="phoneNumber" type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="w-full px-4 py-3 bg-input border border-border rounded-md" />
-                        </div>
-
                         <div>
                             <label className="block text-sm text-muted-foreground mb-2" htmlFor="password">Password</label>
                             <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full px-4 py-3 bg-input border border-border rounded-md" />

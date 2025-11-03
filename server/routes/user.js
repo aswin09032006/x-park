@@ -12,8 +12,9 @@ const {
     getAllGameData,
     updateAvatarPreference,
     removeAvatarPreference,
-    getPlayedGames,     // <-- THIS IS THE FIX
-    addPlayedGame       // <-- THIS IS THE FIX
+    getPlayedGames,
+    addPlayedGame,
+    completeOnboarding
 } = require('../controllers/userController');
 const { protect } = require('../middleware/authMiddleware');
 const { validate, updateUserRules } = require('../middleware/validator');
@@ -23,6 +24,9 @@ router.get('/me', protect, getMe);
 
 // Update current user's data with validation
 router.put('/me', protect, updateUserRules(), validate, updateMe);
+
+// Onboarding completion route
+router.post('/me/complete-onboarding', protect, completeOnboarding);
 
 // Saved Games routes
 router.get('/me/saved-games', protect, getSavedGames);

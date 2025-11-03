@@ -96,8 +96,6 @@ const GameSeriesModal = ({ isOpen, onClose, game, onGameUpdate }) => {
     // We create a unique 'key' for React's map function but keep the original '_id' for all operations.
     const modalGamesData = [
         { ...game, key: `${game._id}_1`, isComingSoon: !game.gameUrl }, 
-        { ...game, key: `${game._id}_2`, gameUrl: null, isComingSoon: true, title: `${game.title} II` },
-        { ...game, key: `${game._id}_3`, gameUrl: null, isComingSoon: true, title: `${game.title} III` }
     ];
 
     const handleOpenRatingModal = (gameForRating) => {

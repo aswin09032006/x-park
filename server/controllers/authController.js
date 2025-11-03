@@ -23,13 +23,12 @@ exports.verifyInviteToken = async (req, res) => {
             return res.status(400).json({ msg: 'Invitation link is invalid or has expired.' });
         }
 
-        // --- UPDATED: Return firstName and lastName ---
+        // --- THIS IS THE FIX: Removed phoneNumber ---
         res.json({ 
             email: preReg.email, 
             firstName: preReg.firstName,
             lastName: preReg.lastName,
             username: preReg.username,
-            phoneNumber: preReg.phoneNumber
         });
 
     } catch (err) {
@@ -39,8 +38,8 @@ exports.verifyInviteToken = async (req, res) => {
 };
 
 exports.completeInvitedRegistration = async (req, res) => {
-    // --- UPDATED: Remove username from request body ---
-    const { password, phoneNumber } = req.body;
+    // --- THIS IS THE FIX: Removed phoneNumber ---
+    const { password } = req.body;
     try {
         const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
         const preReg = await PreRegisteredStudent.findOne({
@@ -52,7 +51,6 @@ exports.completeInvitedRegistration = async (req, res) => {
             return res.status(400).json({ msg: 'Invitation link is invalid or has expired.' });
         }
 
-        // --- THIS IS THE FIX: Logic simplified as username is always pre-set ---
         const finalUsername = preReg.username;
 
         await User.create({
@@ -61,7 +59,6 @@ exports.completeInvitedRegistration = async (req, res) => {
             firstName: preReg.firstName,
             lastName: preReg.lastName,
             username: finalUsername,
-            phoneNumber: phoneNumber || preReg.phoneNumber,
             yearGroup: preReg.yearGroup,
             password: password,
             isVerified: true,
@@ -306,5 +303,3 @@ exports.publicRegisterComplete = async (req, res) => {
         res.status(500).json({ msg: 'Server error during registration completion.' });
     }
 };
-
-

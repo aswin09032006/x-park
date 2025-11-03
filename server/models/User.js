@@ -7,7 +7,8 @@ const GameProgressSchema = new Schema({
     completedLevels: { type: Map, of: Boolean, default: {} },
     highScores: { type: Map, of: Number, default: {} },
     badges: { type: Map, of: String, default: {} },
-    xp: { type: Map, of: Number, default: {} }
+    xp: { type: Map, of: Number, default: {} },
+    certificates: { type: Map, of: Boolean, default: {} }
 }, { _id: false });
 
 
@@ -30,7 +31,6 @@ const UserSchema = new Schema({
         default: function() { return this.role !== 'student' || !this.school; } 
     },
     isVerified: { type: Boolean, default: false },
-    // --- UPDATED: Replaced fullName ---
     firstName: { type: String, default: '' },
     lastName: { type: String, default: '' },
     
@@ -43,13 +43,12 @@ const UserSchema = new Schema({
     },
 
     displayName: { type: String, default: '' },
-    phoneNumber: { type: String, default: '' },
     city: { type: String, default: '' },
     state: { type: String, default: '' },
-    ageGroup: { type: Number, default: 0 },
     studentId: { type: String, default: '' },
     yearGroup: { type: Number, default: 0 },
     landingPagePreference: { type: String, default: 'Dashboard' },
+    isFirstLogin: { type: Boolean, default: true },
     verificationCode: String,
     verificationCodeExpires: Date,
     passwordResetToken: String,
@@ -58,7 +57,6 @@ const UserSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Game'
     }],
-    // --- Added a new field to track played games separately ---
     playedGames: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Game'

@@ -71,7 +71,8 @@ const DataForgeGame = () => {
                     status: 2,
                     score: collectedData.high_score?.find(h => h.stage_id === stageId)?.high_score || 0,
                     badge: collectedData.badges?.find(b => b.stage_id === stageId)?.badge_type || 0,
-                    xp: collectedData.xp_earned?.find(x => x.stage_id === stageId)?.xp || 0
+                    xp: collectedData.xp_earned?.find(x => x.stage_id === stageId)?.xp || 0,
+                    certificate: stageId === NUM_LEVELS ? 1 : 0
                 };
                 saveProgressToBackend(finalPayload);
             }

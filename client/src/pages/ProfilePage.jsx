@@ -63,15 +63,14 @@ const ProfilePage = () => {
 
     useEffect(() => {
         if (user) {
+            // --- THIS IS THE FIX: Removed ageGroup ---
             setFormData({
                 firstName: user.firstName || '',
                 lastName: user.lastName || '',
                 displayName: user.displayName || '',
-                phoneNumber: user.phoneNumber || '',
                 city: user.city || '',
                 state: user.state || '',
                 school: user.school || '',
-                ageGroup: String(user.ageGroup ?? ''),
                 studentId: user.studentId || '',
                 yearGroup: String(user.yearGroup ?? ''),
             });
@@ -179,17 +178,30 @@ const ProfilePage = () => {
 
                 {isEditing ? (
                     <form onSubmit={handleSaveChanges}>
+                        {/* --- THIS IS THE FIX: Removed ageGroup field --- */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12">
                             <EditField label="First Name" name="firstName" value={formData.firstName} onChange={handleInputChange} />
                             <EditField label="Last Name" name="lastName" value={formData.lastName} onChange={handleInputChange} />
                             <EditField label="Display Name" name="displayName" value={formData.displayName} onChange={handleInputChange} />
-                            <EditField label="Phone number" name="phoneNumber" value={formData.phoneNumber} onChange={handleInputChange} />
                             <EditField label="City" name="city" value={formData.city} onChange={handleInputChange} />
                             <EditField label="State" name="state" value={formData.state} onChange={handleInputChange} />
                             <EditField label="School" name="school" value={formData.school} onChange={handleInputChange} />
-                            <EditField label="Age group" name="ageGroup" type="number" value={formData.ageGroup} onChange={handleInputChange} />
                             <EditField label="Student ID" name="studentId" value={formData.studentId} onChange={handleInputChange} />
-                            <EditField label="Year group" name="yearGroup" type="number" value={formData.yearGroup} onChange={handleInputChange} />
+                            <div className="mb-6">
+                                <label htmlFor="yearGroup" className="block text-sm text-muted-foreground mb-2">Year group</label>
+                                <select
+                                    id="yearGroup"
+                                    name="yearGroup"
+                                    value={formData.yearGroup}
+                                    onChange={handleInputChange}
+                                    className="w-full px-4 py-3 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring appearance-none"
+                                >
+                                    <option value="">Select Year...</option>
+                                    {Array.from({ length: 7 }, (_, i) => i + 7).map(year => (
+                                        <option key={year} value={year}>Year {year}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                         {error && <p className="text-destructive text-sm text-center my-4">{error}</p>}
                         {success && <p className="text-green-500 text-sm text-center my-4">{success}</p>}
@@ -202,16 +214,15 @@ const ProfilePage = () => {
                     </form>
                 ) : (
                     <>
+                        {/* --- THIS IS THE FIX: Removed ageGroup field --- */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12">
                             <InfoField label="First Name" value={user.firstName} />
                             <InfoField label="Last Name" value={user.lastName} />
                             <InfoField label="Display Name" value={user.displayName || user.username} />
-                            <InfoField label="Phone number" value={user.phoneNumber} />
                             <InfoField label="Email" value={user.email} canCopy />
                             <InfoField label="City" value={user.city} />
                             <InfoField label="State" value={user.state} />
                             <InfoField label="School" value={user.school} />
-                            <InfoField label="Age group" value={user.ageGroup} />
                             <InfoField label="Student ID" value={user.studentId} canCopy />
                             <InfoField label="Year group" value={user.yearGroup} />
                         </div>

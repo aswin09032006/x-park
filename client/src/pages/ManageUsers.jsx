@@ -27,26 +27,25 @@ const StatCard = ({ title, value, color }) => (
   </div>
 );
 
-// --- THIS IS THE FIX: Centralized logic for processing a student's game data ---
+// --- THIS IS THE FIX: Centralized logic now correctly sums actual certificates ---
 const processGameData = (gameData) => {
   if (!gameData) return { certificates: 0, badges: 0, gameAttempts: 0 };
   
   let totalBadges = 0;
   let totalAttempts = 0;
+  let totalCertificates = 0;
 
-  // Mongoose Map is converted to an object when sent via API, so we iterate over its values
   for (const progress of Object.values(gameData)) {
     if (progress.badges) {
-      // For plain objects, Object.keys().length is the way to get the size
       totalBadges += Object.keys(progress.badges).length;
     }
     if (progress.completedLevels) {
       totalAttempts += Object.keys(progress.completedLevels).length;
     }
+    if (progress.certificates) {
+      totalCertificates += Object.keys(progress.certificates).length;
+    }
   }
-
-  // The business rule for certificates is applied here consistently
-  const totalCertificates = Math.floor(totalBadges / 3);
 
   return { certificates: totalCertificates, badges: totalBadges, gameAttempts: totalAttempts };
 };

@@ -77,7 +77,8 @@ const CyberSecurityGame = () => {
                     status: 2,
                     score: parseInt(finalScore) || 0,
                     badge: parseInt(finalBadge) || 0,
-                    xp: parseInt(finalXp) || 0
+                    xp: parseInt(finalXp) || 0,
+                    certificate: 1 // Award certificate on game completion
                 };
                 
                 saveProgressToBackend(finalPayload);
