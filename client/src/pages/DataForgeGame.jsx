@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../services/api';
 
-const GAME_ID = "DataForge";
+const GAME_ID = "data-forge";
 const UNITY_BUILD_DIR = `/${GAME_ID}/Build`;
 const NUM_LEVELS = 5;
 const LOCAL_STORAGE_KEY = 'gameData';
@@ -152,15 +152,15 @@ const DataForgeGame = () => {
                 
                 const script = document.createElement("script");
                 script.id = 'unity-loader-script';
-                script.src = `${UNITY_BUILD_DIR}/DataForge55_improvement.loader.js`;
+                script.src = `${UNITY_BUILD_DIR}/DataForge50_json.loader.js`;
                 script.async = true;
                 document.body.appendChild(script);
 
                 script.onload = () => {
                     const config = {
-                        dataUrl: `${UNITY_BUILD_DIR}/DataForge55_improvement.data.br`,
-                        frameworkUrl: `${UNITY_BUILD_DIR}/DataForge55_improvement.framework.js.br`,
-                        codeUrl: `${UNITY_BUILD_DIR}/DataForge55_improvement.wasm.br`,
+                        dataUrl: `${UNITY_BUILD_DIR}/DataForge50_json.data.br`,
+                        frameworkUrl: `${UNITY_BUILD_DIR}/DataForge50_json.framework.js.br`,
+                        codeUrl: `${UNITY_BUILD_DIR}/DataForge50_json.wasm.br`,
                         companyName: "XPARK", productName: "Data Forge", productVersion: "1.4",
                     };
                     window.createUnityInstance(canvasRef.current, config, (p) => setLoadingMessage(`Loading Game... ${Math.round(p * 100)}%`))

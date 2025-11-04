@@ -1,11 +1,13 @@
 import { Bookmark, Play, Star, Trophy, Users, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useGames } from '../context/GameContext';
+import { useAuth } from '../context/AuthContext'; // <-- IMPORT useAuth
 import { useState } from 'react';
 import RatingModal from './RatingModal';
 
 const GameModal = ({ game, isOpen, onClose, onGameUpdate  }) => {
     const { saveGame, unsaveGame, isGameSaved, startGame } = useGames();
+    const { user } = useAuth(); // <-- Get the user object
 
     const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
 
@@ -13,12 +15,16 @@ const GameModal = ({ game, isOpen, onClose, onGameUpdate  }) => {
 
     const {
         _id, title, imageUrl, description, category, sponsor, 
-        gameUrl, isComingSoon, averageRating, numRatings,
+        gameUrl, isComingSoon, averageRating, numRatings, ratings,
     } = game;
 
 
     const isPlayable = gameUrl && !isComingSoon;
     const isSaved = isGameSaved(_id);
+
+    // --- THIS IS THE FIX: Check if the current user has already rated this game ---
+    const userRating = ratings?.find(r => r.user === user?._id);
+    const hasRated = !!userRating;
 
     const handleBackdropClick = (e) => {
         if (e.target === e.currentTarget) {
@@ -94,16 +100,24 @@ const GameModal = ({ game, isOpen, onClose, onGameUpdate  }) => {
                                 <Bookmark size={20} className={`transition-all ${isSaved ? 'fill-current text-primary' : ''}`} />
                                 <span>{isSaved ? "Saved" : "Save"}</span>
                             </button>
-
+                            
+                            {/* --- THIS IS THE FIX: Conditionally render the Rate button or the user's rating --- */}
                             {!isComingSoon && (
-                                <button 
-                                    onClick={() => setIsRatingModalOpen(true)} // <-- OPEN RATING MODAL
-                                    className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-secondary"
-                                    title="Rate the game"
-                                >
-                                    <Star size={20} />
-                                    <span>Rate</span>
-                                </button>
+                                hasRated ? (
+                                    <div className="flex items-center gap-2 text-yellow-400 p-3 rounded-lg bg-secondary" title={`You rated this ${userRating.rating} stars`}>
+                                        <Star size={20} className="fill-current" />
+                                        <span>{userRating.rating} / 5</span>
+                                    </div>
+                                ) : (
+                                    <button 
+                                        onClick={() => setIsRatingModalOpen(true)}
+                                        className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors p-3 rounded-lg hover:bg-secondary"
+                                        title="Rate the game"
+                                    >
+                                        <Star size={20} />
+                                        <span>Rate</span>
+                                    </button>
+                                )
                             )}
                         </div>
                     </div>
@@ -123,7 +137,6 @@ const GameModal = ({ game, isOpen, onClose, onGameUpdate  }) => {
                                 <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Rating</p>
                                 <div className="flex items-center gap-2">
                                     <Star className="text-yellow-400 fill-yellow-400" size={18} />
-                                    {/* --- DISPLAY AVERAGE RATING --- */}
                                     <span className="text-card-foreground font-semibold">
                                         {averageRating ? averageRating.toFixed(1) : 'N/A'}
                                     </span>

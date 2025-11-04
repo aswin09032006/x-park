@@ -10,29 +10,41 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
-    const logout = useCallback(() => {
+    // --- THIS IS THE FIX ---
+    // The logout function now handles updating the isFirstLogin flag on the backend.
+    const logout = useCallback(async () => {
+        // If the user logging out is on their first session, call the API to update the flag.
+        if (user && user.isFirstLogin) {
+            try {
+                await api('/users/me/complete-onboarding', 'POST');
+            } catch (error) {
+                // Log the error but proceed with logout regardless, as it's not a critical failure.
+                console.error("Failed to update onboarding status on logout:", error);
+            }
+        }
+
+        // Standard logout procedure
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         setUser(null);
         setIsAuthenticated(false);
         navigate('/');
-    }, [navigate]);
+    }, [navigate, user]); // Add `user` to the dependency array
 
     const fetchUser = useCallback(async () => {
-        // Only fetch if a token exists
         if (localStorage.getItem('accessToken')) {
             try {
                 const userData = await api('/users/me');
                 setUser(userData);
                 setIsAuthenticated(true);
             } catch (error) {
-                // If fetching user fails (e.g., token invalid), log out
                 console.error("Failed to fetch user, logging out.", error);
+                // Call the modified logout function which handles token clearing and navigation
                 logout();
             }
         }
         setLoading(false);
-    }, [logout]);
+    }, [logout]); // logout is now a dependency of fetchUser
 
     useEffect(() => {
         fetchUser();

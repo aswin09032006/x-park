@@ -6,12 +6,11 @@ import InfoField from '../components/InfoField';
 import EditField from '../components/EditField';
 import { getAvatarUrl } from '../utils/avatar';
 
-// A component to render the achievements
 const Achievements = ({ gameData }) => {
-    const badgeColors = {
-        bronze: 'text-orange-400',
-        silver: 'text-gray-300',
-        gold: 'text-yellow-400',
+    const badgeTiers = {
+        '1': { name: 'Bronze', color: 'text-orange-400 bg-gradient-to-br from-orange-900/40 to-orange-600/20 border-orange-400/50' },
+        '2': { name: 'Silver', color: 'text-gray-300 bg-gradient-to-br from-gray-700/40 to-gray-500/20 border-gray-400/50' },
+        '3': { name: 'Gold', color: 'text-yellow-400 bg-gradient-to-br from-yellow-900/40 to-yellow-600/20 border-yellow-400/50' },
     };
 
     const hasAchievements = gameData && Object.keys(gameData).length > 0 && 
@@ -33,14 +32,23 @@ const Achievements = ({ gameData }) => {
                 return (
                     <div key={gameId}>
                         <h3 className="text-lg font-semibold capitalize mb-4">{gameId.replace(/([A-Z])/g, ' $1')}</h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                            {Object.entries(progress.badges).map(([stage, badge]) => (
-                                <div key={stage} className="bg-secondary p-4 rounded-lg flex flex-col items-center justify-center text-center">
-                                    <Award size={40} className={badgeColors[badge.toLowerCase()] || 'text-foreground'} />
-                                    <p className="font-bold mt-2 capitalize">{badge} Badge</p>
-                                    <p className="text-sm text-muted-foreground capitalize">{stage}</p>
-                                </div>
-                            ))}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                            {Object.entries(progress.badges).map(([stage, badgeValue]) => {
+                                const badgeInfo = badgeTiers[badgeValue];
+                                if (!badgeInfo) return null;
+
+                                return (
+                                    <div
+                                        key={stage}
+                                        className={`relative p-5 rounded-xl flex flex-col items-center justify-center text-center border transition-transform transform hover:scale-105 hover:shadow-lg hover:shadow-${badgeInfo.color?.split(' ')[0] || 'primary'}/30 ${badgeInfo.color}`}
+                                    >
+                                        <div className="absolute inset-0 opacity-20 rounded-xl bg-gradient-to-br from-transparent via-white/5 to-transparent" />
+                                        <Award size={50} className={`mb-2 ${badgeInfo.color?.split(' ')[0]}`} />
+                                        <p className="font-bold mt-1 text-base">{badgeInfo.name} Badge</p>
+                                        <p className="text-sm text-muted-foreground capitalize">Stage {stage}</p>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 );
@@ -48,7 +56,6 @@ const Achievements = ({ gameData }) => {
         </div>
     );
 };
-
 
 const ProfilePage = () => {
     const { user, fetchUser } = useAuth();
@@ -63,13 +70,13 @@ const ProfilePage = () => {
 
     useEffect(() => {
         if (user) {
+            // --- THIS IS THE FIX: Removed 'school' from the editable form data ---
             setFormData({
                 firstName: user.firstName || '',
                 lastName: user.lastName || '',
                 displayName: user.displayName || '',
                 city: user.city || '',
-                county: user.county || '', // Changed from state to county
-                school: user.school || '',
+                state: user.state || '',
                 studentId: user.studentId || '',
                 yearGroup: String(user.yearGroup ?? ''),
             });
@@ -182,8 +189,9 @@ const ProfilePage = () => {
                             <EditField label="Last Name" name="lastName" value={formData.lastName} onChange={handleInputChange} />
                             <EditField label="Display Name" name="displayName" value={formData.displayName} onChange={handleInputChange} />
                             <EditField label="City" name="city" value={formData.city} onChange={handleInputChange} />
-                            <EditField label="County" name="county" value={formData.county} onChange={handleInputChange} /> {/* Changed label and name to County */}
-                            <EditField label="School" name="school" value={formData.school} onChange={handleInputChange} />
+                            <EditField label="State" name="state" value={formData.state} onChange={handleInputChange} />
+                            {/* --- THIS IS THE FIX: School is now a read-only InfoField --- */}
+                            <InfoField label="School" value={user.school?.name} />
                             <EditField label="Student ID" name="studentId" value={formData.studentId} onChange={handleInputChange} />
                             <div className="mb-6">
                                 <label htmlFor="yearGroup" className="block text-sm text-muted-foreground mb-2">Year group</label>
@@ -218,8 +226,9 @@ const ProfilePage = () => {
                             <InfoField label="Display Name" value={user.displayName || user.username} />
                             <InfoField label="Email" value={user.email} canCopy />
                             <InfoField label="City" value={user.city} />
-                            <InfoField label="County" value={user.county} /> {/* Changed label to County */}
-                            <InfoField label="School" value={user.school} />
+                            <InfoField label="State" value={user.state} />
+                            {/* --- THIS IS THE FIX: Display the school name from the populated object --- */}
+                            <InfoField label="School" value={user.school?.name} />
                             <InfoField label="Student ID" value={user.studentId} canCopy />
                             <InfoField label="Year group" value={user.yearGroup} />
                         </div>

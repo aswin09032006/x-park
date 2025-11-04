@@ -3,16 +3,30 @@ import { Link } from 'react-router-dom';
 import { Play, Star, X } from 'lucide-react';
 import bg from '../../public/image.png';
 import { useGames } from '../context/GameContext';
+import { useAuth } from '../context/AuthContext';
 import RatingModal from './RatingModal';
 
 const ModalGameCard = ({ game, onRateClick }) => {
-    // The hook now provides the correct functions
-    const { startGame, isGameInProgress, getGameProgress } = useGames();
-    
-    // Pass the full `game` object to the new functions
-    const isInProgress = isGameInProgress(game);
-    const progress = getGameProgress(game);
+    const { startGame } = useGames();
+    const { user } = useAuth();
 
+    const getGameInfo = (g) => {
+        if (g.gameUrl?.includes('data-forge')) return { identifier: 'data-forge', totalLevels: 5 };
+        if (g.gameUrl?.includes('cyber-security')) return { identifier: 'cyber-security', totalLevels: 1 };
+        return { identifier: g._id, totalLevels: 1 };
+    };
+
+    const { identifier, totalLevels } = getGameInfo(game);
+    const userProgressForGame = user?.gameData?.[identifier];
+    const completedLevelsCount = userProgressForGame?.completedLevels ? Object.keys(userProgressForGame.completedLevels).length : 0;
+    
+    const progress = totalLevels > 0 ? Math.round((completedLevelsCount / totalLevels) * 100) : 0;
+    const isInProgress = completedLevelsCount > 0;
+    
+    // --- THIS IS THE FIX: Check if the current user has already rated this game ---
+    const userRating = game.ratings?.find(r => r.user === user?._id);
+    const hasRated = !!userRating;
+    
     const handlePlayClick = () => {
         if (game.gameUrl && !game.isComingSoon) {
             startGame(game);
@@ -26,7 +40,7 @@ const ModalGameCard = ({ game, onRateClick }) => {
             {isInProgress && !game.isComingSoon && (
                 <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
                     <div className="flex justify-between items-center text-xs text-red-400 font-semibold mb-1">
-                        <span>In-progress</span>
+                        <span>{progress === 100 ? 'Completed' : 'In-progress'}</span>
                         <span>{progress}%</span>
                     </div>
                     <div className="w-full bg-gray-600 rounded-full h-1.5">
@@ -52,14 +66,22 @@ const ModalGameCard = ({ game, onRateClick }) => {
                         Coming Soon
                     </button>
                 )}
-                {!game.isComingSoon && 
-                <button 
-                    onClick={() => onRateClick(game)} // This 'game' object has the correct _id
-                    className="flex items-center justify-center border border-gray-600 text-gray-300 hover:bg-gray-700 py-2 px-4 rounded-md transition-colors"
-                >
-                    <Star size={16} className="mr-2" /> Rate
-                </button>
-                }
+                
+                {/* --- THIS IS THE FIX: Conditionally render the Rate button or the user's rating --- */}
+                {!game.isComingSoon && (
+                    hasRated ? (
+                        <div className="flex items-center justify-center border border-gray-600 text-yellow-400 py-2 px-4 rounded-md" title={`You rated this ${userRating.rating} stars`}>
+                            <Star size={16} className="mr-2 fill-current" /> Rated {userRating.rating}/5
+                        </div>
+                    ) : (
+                        <button 
+                            onClick={() => onRateClick(game)}
+                            className="flex items-center justify-center border border-gray-600 text-gray-300 hover:bg-gray-700 py-2 px-4 rounded-md transition-colors"
+                        >
+                            <Star size={16} className="mr-2" /> Rate
+                        </button>
+                    )
+                )}
             </div>
             <div className="border-t border-gray-700 mt-4 pt-3 text-xs text-gray-400 flex justify-between items-center">
                 <div>
@@ -93,8 +115,6 @@ const GameSeriesModal = ({ isOpen, onClose, game, onGameUpdate }) => {
 
     if (!isOpen || !game) return null;
     
-    // --- FIX: The series is a frontend concept. All cards relate to the SAME game document. ---
-    // We create a unique 'key' for React's map function but keep the original '_id' for all operations.
     const modalGamesData = [
         { ...game, key: `${game._id}_1`, isComingSoon: !game.gameUrl }, 
     ];
@@ -130,7 +150,6 @@ const GameSeriesModal = ({ isOpen, onClose, game, onGameUpdate }) => {
                     </div>
                     <div className="p-8 md:p-12">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {/* --- Use the new 'key' property for React's key, not the _id --- */}
                             {modalGamesData.map(g => <ModalGameCard key={g.key} game={g} onRateClick={handleOpenRatingModal} />)}
                         </div>
                     </div>
@@ -139,7 +158,7 @@ const GameSeriesModal = ({ isOpen, onClose, game, onGameUpdate }) => {
 
             <RatingModal
                 isOpen={isRatingModalOpen}
-                game={gameToRate} // This 'game' object will have the correct, original _id
+                game={gameToRate}
                 onClose={() => setIsRatingModalOpen(false)}
                 onSuccess={handleRatingSuccess}
             />
