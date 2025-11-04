@@ -189,7 +189,7 @@ const ProfilePage = () => {
                             <EditField label="Last Name" name="lastName" value={formData.lastName} onChange={handleInputChange} />
                             <EditField label="Display Name" name="displayName" value={formData.displayName} onChange={handleInputChange} />
                             <EditField label="City" name="city" value={formData.city} onChange={handleInputChange} />
-                            <EditField label="State" name="state" value={formData.state} onChange={handleInputChange} />
+                            <EditField label="County" name="county" value={formData.state} onChange={handleInputChange} />
                             {/* --- THIS IS THE FIX: School is now a read-only InfoField --- */}
                             <InfoField label="School" value={user.school?.name} />
                             <EditField label="Student ID" name="studentId" value={formData.studentId} onChange={handleInputChange} />
@@ -226,7 +226,7 @@ const ProfilePage = () => {
                             <InfoField label="Display Name" value={user.displayName || user.username} />
                             <InfoField label="Email" value={user.email} canCopy />
                             <InfoField label="City" value={user.city} />
-                            <InfoField label="State" value={user.state} />
+                            <InfoField label="County" value={user.state} />
                             {/* --- THIS IS THE FIX: Display the school name from the populated object --- */}
                             <InfoField label="School" value={user.school?.name} />
                             <InfoField label="Student ID" value={user.studentId} canCopy />
