@@ -445,7 +445,11 @@ exports.getStudentGameData = async (req, res) => {
         const { studentId } = req.params;
         const adminSchoolId = req.user.school.toString();
 
-        const student = await User.findById(studentId).select('gameData school');
+    const student = await User.findOne({
+        _id: studentId,            // target user
+        school: adminSchoolId,     // same school as the admin
+        role: 'student'            // ensure it’s a student record
+    }).select('gameData school');
         if (!student || student.school.toString() !== adminSchoolId) {
             return res.status(404).json({ msg: 'Student not found in your school.' });
         }

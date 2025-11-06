@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { AtSign, School, Link, Edit3, Eye, Bold, Italic, Link2, Type, Underline, AlignLeft, AlignCenter, AlignRight, List, ListOrdered } from 'lucide-react';
+import DOMPurify from 'dompurify';
 
 export const defaultSubject = "Your Invitation to Join XPARK";
-// --- THIS IS THE FIX ---
 export const defaultBody = `<div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
     <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
     <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
@@ -80,13 +80,27 @@ const EditableEmail = ({ subject, setSubject, body, setBody, studentFirstNamePre
 
     useEffect(() => {
         if (editorRef.current && activeTab === 'editor') {
-            editorRef.current.innerHTML = body;
+            // Sanitize content before setting it in the editor
+            const sanitized = DOMPurify.sanitize(body, {
+                ALLOWED_TAGS: ['div', 'p', 'span', 'br', 'strong', 'em', 'u', 'b', 'i', 'a', 'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'td', 'th'],
+                ALLOWED_ATTR: ['style', 'href', 'src', 'alt', 'class', 'id', 'contenteditable', 'title', 'target', 'rel'],
+                ALLOW_DATA_ATTR: false,
+                ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|#):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+            });
+            editorRef.current.innerHTML = sanitized;
         }
-    }, [activeTab]);
+    }, [activeTab, body]);
 
     const handleEditorInput = () => {
         if (editorRef.current) {
-            setBody(editorRef.current.innerHTML);
+            // Sanitize the HTML before storing it
+            const sanitized = DOMPurify.sanitize(editorRef.current.innerHTML, {
+                ALLOWED_TAGS: ['div', 'p', 'span', 'br', 'strong', 'em', 'u', 'b', 'i', 'a', 'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'td', 'th'],
+                ALLOWED_ATTR: ['style', 'href', 'src', 'alt', 'class', 'id', 'contenteditable', 'title', 'target', 'rel'],
+                ALLOW_DATA_ATTR: false,
+                ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|#):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+            });
+            setBody(sanitized);
         }
     };
 
@@ -128,7 +142,14 @@ const EditableEmail = ({ subject, setSubject, body, setBody, studentFirstNamePre
         previewBody = previewBody.replace(/{{studentFirstName}}/g, studentFirstNamePreview);
         previewBody = previewBody.replace(/{{schoolName}}/g, '[Your School Name]');
         previewBody = previewBody.replace(/{{registrationLink}}/g, '#');
-        return previewBody;
+        
+        // Sanitize the preview HTML to prevent XSS
+        return DOMPurify.sanitize(previewBody, {
+            ALLOWED_TAGS: ['div', 'p', 'span', 'br', 'strong', 'em', 'u', 'b', 'i', 'a', 'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'td', 'th'],
+            ALLOWED_ATTR: ['style', 'href', 'src', 'alt', 'class', 'id', 'title', 'target', 'rel'],
+            ALLOW_DATA_ATTR: false,
+            ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|#):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+        });
     };
 
     return (

@@ -3,11 +3,15 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
 const connectDB = require('./config/db');
+const helmet = require('helmet'); // --- THIS IS THE FIX: Import Helmet
 
 dotenv.config();
 connectDB();
 
 const app = express();
+
+
+app.use(helmet());
 
 // --- Updated CORS config ---
 const allowedOrigins = process.env.FRONTEND_URL

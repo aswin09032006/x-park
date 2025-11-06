@@ -1,8 +1,11 @@
-import React from 'react';
+// src/components/GameCard.jsx
+
+import React from 'react'; // --- THIS IS THE FIX: Import React for React.memo ---
 import { Bookmark } from 'lucide-react';
 import { useGames } from '../context/GameContext';
 
-const GameCard = ({ game, onClick }) => {
+// --- THIS IS THE FIX: Wrap the entire component logic inside React.memo ---
+const GameCard = React.memo(({ game, onClick }) => {
   const {
     _id,
     title = "Default Title",
@@ -11,7 +14,6 @@ const GameCard = ({ game, onClick }) => {
     category = "N/A",
     sponsor = "N/A",
     isComingSoon = false,
-    // --- Use the new averageRating field from the backend ---
     averageRating, 
   } = game;
   
@@ -72,7 +74,6 @@ const GameCard = ({ game, onClick }) => {
               </div>
             </div>
             
-            {/* --- Conditionally render the Rating section --- */}
             {!isComingSoon && (
               <div>
                 <p className="text-gray-400 text-xs mb-1">Rating</p>
@@ -97,6 +98,6 @@ const GameCard = ({ game, onClick }) => {
       </div>
     </div>
   );
-};
+});
 
 export default GameCard;
