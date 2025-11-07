@@ -1,6 +1,6 @@
 import { logger } from './logger';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://api-xpark.creozen.co.uk/api' || 'http://localhost:5000/api';
 
 export const publicApi = async (endpoint, method = 'GET', body = null) => {
     const context = `publicApi.${method}`;
