@@ -18,47 +18,39 @@ export const GameProvider = ({ children }) => {
     const [userGameData, setUserGameData] = useState({});
     const context = 'GameContext';
 
-    const fetchSavedGames = useCallback(async () => {
-        if (!isAuthenticated) return;
-        try {
-            const gamesData = await api('/users/me/saved-games');
-            setSavedGames(gamesData);
-        } catch (error) {
-            logger.error("Failed to fetch saved games.", { context, details: { error: error.message } });
-        }
-    }, [isAuthenticated]);
-
-    const fetchPlayedGames = useCallback(async () => {
-        if (!isAuthenticated) return;
-        try {
-            const gamesData = await api('/users/me/played-games');
-            setPlayedGames(gamesData);
-        } catch (error) {
-            logger.error("Failed to fetch played games.", { context, details: { error: error.message } });
-        }
-    }, [isAuthenticated]);
-
-    const fetchUserProgress = useCallback(async () => {
-        if (!isAuthenticated) return;
-        try {
-            const progressData = await api('/users/me/gamedata');
-            setUserGameData(progressData);
-        } catch (error) {
-            logger.error("Failed to fetch user game progress.", { context, details: { error: error.message } });
-        }
-    }, [isAuthenticated]);
-
     useEffect(() => {
-        if (isAuthenticated) {
-            fetchSavedGames();
-            fetchPlayedGames();
-            fetchUserProgress();
-        } else {
-            setSavedGames([]);
-            setPlayedGames([]);
-            setUserGameData({});
-        }
-    }, [isAuthenticated, fetchSavedGames, fetchPlayedGames, fetchUserProgress]);
+        let isMounted = true;
+
+        const fetchAllGameData = async () => {
+            if (isAuthenticated) {
+                try {
+                    const [saved, played, progress] = await Promise.all([
+                        api('/users/me/saved-games'),
+                        api('/users/me/played-games'),
+                        api('/users/me/gamedata')
+                    ]);
+
+                    if (isMounted) {
+                        setSavedGames(saved);
+                        setPlayedGames(played);
+                        setUserGameData(progress);
+                    }
+                } catch (error) {
+                    logger.error("Failed to fetch user game data.", { context, details: { error: error.message } });
+                }
+            } else {
+                setSavedGames([]);
+                setPlayedGames([]);
+                setUserGameData({});
+            }
+        };
+
+        fetchAllGameData();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [isAuthenticated]);
     
     const saveGame = async (game) => {
         try {
@@ -117,6 +109,16 @@ export const GameProvider = ({ children }) => {
             }
         }
     };
+
+    const fetchUserProgress = useCallback(async () => {
+        if (!isAuthenticated) return;
+        try {
+            const progressData = await api('/users/me/gamedata');
+            setUserGameData(progressData);
+        } catch (error) {
+            logger.error("Failed to fetch user game progress.", { context, details: { error: error.message } });
+        }
+    }, [isAuthenticated]);
 
     const value = { savedGames, playedGames, saveGame, unsaveGame, isGameSaved, startGame, isGameInProgress, getGameProgress, fetchUserProgress };
 

@@ -1,8 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, memo } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
-// Import icons and assets
 import { Bell, Settings } from 'lucide-react';
 import { FiSearch } from 'react-icons/fi';
 import ProfilePopup from './ProfilePopup';
@@ -14,9 +12,8 @@ const Navbar = () => {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const popupRef = useRef(null);
 
-  // --- START: DYNAMIC NAVIGATION LOGIC ---
   let navLinks = [];
-  let logoLink = '/'; // Default link for the logo
+  let logoLink = '/'; 
 
   if (user) {
     switch (user.role) {
@@ -35,7 +32,6 @@ const Navbar = () => {
           { name: 'Dashboard', path: '/admin/dashboard' },
           { name: 'Students', path: '/admin/manage-users' },
           { name: 'Game Library', path: '/admin/games' },
-          // --- NEW: Add the Games Progress link for admins ---
           { name: 'Games Progress', path: '/admin/games-progress' },
         ];
         break;
@@ -48,12 +44,10 @@ const Navbar = () => {
         ];
         break;
       default:
-        // No links for unknown roles
         navLinks = [];
         logoLink = '/';
     }
   }
-  // --- END: DYNAMIC NAVIGATION LOGIC ---
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -67,7 +61,6 @@ const Navbar = () => {
     };
   }, []);
 
-  // Do not render the navbar if there is no user (e.g., on login page)
   if (!user) {
     return null;
   }
@@ -75,12 +68,10 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-sm text-foreground flex items-center justify-between px-8 py-4 border-b border-border">
       <div className="flex items-center space-x-12">
-        {/* The logo now links dynamically based on the user's role */}
         <Link to={logoLink}>
             <img src={logo} alt="XPARK Logo" className="h-7 dark:filter-none filter invert" />
         </Link>
         <ul className="flex items-center space-x-8">
-          {/* The navigation links are now rendered from the role-specific array */}
           {navLinks.map((link) => (
             <li key={link.name} className="relative">
               <NavLink 
@@ -105,7 +96,6 @@ const Navbar = () => {
         </ul>
       </div>
 
-      {/* This section remains the same for all logged-in users */}
       <div className="flex items-center space-x-6">
         <div className="relative">
           <input type="text" placeholder="Type here to Search..." className="bg-secondary border border-border rounded-lg py-2 pl-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-ring w-64"/>
@@ -135,4 +125,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default memo(Navbar);

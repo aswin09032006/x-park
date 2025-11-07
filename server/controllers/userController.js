@@ -17,8 +17,9 @@ exports.getMe = async (req, res) => {
 exports.updateMe = async (req, res) => {
     const context = 'userController.updateMe';
     const { correlation_id } = req;
-    const { firstName, lastName, displayName, city, county, school, studentId, yearGroup, landingPagePreference } = req.body;
-    
+    const { firstName, lastName, displayName, city, county, studentId, yearGroup, landingPagePreference } = req.body;
+    // Removed 'school' from destructuring above
+
     try {
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ msg: 'User not found' });
@@ -29,17 +30,26 @@ exports.updateMe = async (req, res) => {
         if (displayName !== undefined) fieldsToUpdate.displayName = displayName;
         if (city !== undefined) fieldsToUpdate.city = city;
         if (county !== undefined) fieldsToUpdate.county = county;
-        if (school !== undefined) fieldsToUpdate.school = school;
+        // Removed ability for users to modify school:
+        // if (school !== undefined) fieldsToUpdate.school = school;
         if (studentId !== undefined) fieldsToUpdate.studentId = studentId;
         if (yearGroup !== undefined) fieldsToUpdate.yearGroup = yearGroup;
         if (landingPagePreference !== undefined) fieldsToUpdate.landingPagePreference = landingPagePreference;
-        
-        const updatedUser = await User.findByIdAndUpdate(req.user.id, { $set: fieldsToUpdate }, { new: true, runValidators: true }).select('-password');
-        
+
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user.id,
+            { $set: fieldsToUpdate },
+            { new: true, runValidators: true }
+        ).select('-password');
+
         backendLogger.info('User profile updated successfully.', { context, correlation_id, details: { userId: req.user.id } });
         res.json(updatedUser);
     } catch (err) {
-        backendLogger.error('Failed to update user profile.', { context, correlation_id, details: { userId: req.user.id, error: err.message, stack: err.stack } });
+        backendLogger.error('Failed to update user profile.', {
+            context,
+            correlation_id,
+            details: { userId: req.user.id, error: err.message, stack: err.stack }
+        });
         res.status(500).json({ msg: 'Server error' });
     }
 };

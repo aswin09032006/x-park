@@ -1,18 +1,13 @@
-// src/App.jsx
 
-import React, { Suspense, lazy } from 'react'; // --- THIS IS THE FIX: Import Suspense and lazy ---
+import React, { Suspense, lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
-import AdminRoute from './components/AdminRoute';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
-import SuperAdminRoute from './components/SuperAdminRoute';
 import { useAuth } from './context/AuthContext';
-import LoadingPage from './pages/LoadingPage'; // Keep for main auth loading
-import Loader from './pages/LoadingPage'; // A loader for Suspense fallback
+import LoadingPage from './pages/LoadingPage'; 
+import Loader from './pages/LoadingPage'; 
 
-// --- THIS IS THE FIX: Lazy load page components ---
 const LoginPage = lazy(() => import('./pages/LoginPage'));
-const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const InvitedRegisterPage = lazy(() => import('./pages/InvitedRegisterPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
 const UpdatePasswordPage = lazy(() => import('./pages/UpdatePasswordPage'));
@@ -46,32 +41,30 @@ function App() {
   }
 
   return (
-    // --- THIS IS THE FIX: Wrap Routes with Suspense to handle lazy loading ---
     <Suspense fallback={<Loader />}>
       <Routes>
         <Route path="/" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
         <Route path="/register/invite/:token" element={<InvitedRegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:resetToken" element={<UpdatePasswordPage />} />
         
-        <Route path="/dashboard" element={<ProtectedRoute><MainLayout><DashboardPage /></MainLayout></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['student']}><MainLayout><DashboardPage /></MainLayout></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><MainLayout><ProfilePage /></MainLayout></ProtectedRoute>} />
-        <Route path="/library" element={<ProtectedRoute><MainLayout><GameLibraryPage /></MainLayout></ProtectedRoute>} />
+        <Route path="/library" element={<ProtectedRoute allowedRoles={['student']}><MainLayout><GameLibraryPage /></MainLayout></ProtectedRoute>} />
         <Route path="/support" element={<ProtectedRoute><MainLayout><SupportPage /></MainLayout></ProtectedRoute>} />
-        <Route path="/my-games" element={<ProtectedRoute><MainLayout><MyGames /></MainLayout></ProtectedRoute>} />
+        <Route path="/my-games" element={<ProtectedRoute allowedRoles={['student']}><MainLayout><MyGames /></MainLayout></ProtectedRoute>} />
         
-        <Route path="/games/cyber-security" element={<ProtectedRoute><GameLayout><CyberSecurityGame /></GameLayout></ProtectedRoute>} />
-        <Route path="/games/data-forge" element={<ProtectedRoute><GameLayout><DataForgeGame /></GameLayout></ProtectedRoute>} />
+        <Route path="/games/cyber-security" element={<ProtectedRoute allowedRoles={['student']}><GameLayout><CyberSecurityGame /></GameLayout></ProtectedRoute>} />
+        <Route path="/games/data-forge" element={<ProtectedRoute allowedRoles={['student']}><GameLayout><DataForgeGame /></GameLayout></ProtectedRoute>} />
 
-        <Route path="/admin/dashboard" element={<AdminRoute><MainLayout><AdminDashboard /></MainLayout></AdminRoute>} />
-        <Route path="/admin/manage-users" element={<AdminRoute><MainLayout><ManageUsers /></MainLayout></AdminRoute>} />
-        <Route path="/admin/games" element={<AdminRoute><MainLayout><AdminGamesPage /></MainLayout></AdminRoute>} />
-        <Route path="/admin/games-progress" element={<AdminRoute><MainLayout><GamesProgressPage /></MainLayout></AdminRoute>} />
+        <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['schooladmin']}><MainLayout><AdminDashboard /></MainLayout></ProtectedRoute>} />
+        <Route path="/admin/manage-users" element={<ProtectedRoute allowedRoles={['schooladmin']}><MainLayout><ManageUsers /></MainLayout></ProtectedRoute>} />
+        <Route path="/admin/games" element={<ProtectedRoute allowedRoles={['schooladmin']}><MainLayout><AdminGamesPage /></MainLayout></ProtectedRoute>} />
+        <Route path="/admin/games-progress" element={<ProtectedRoute allowedRoles={['schooladmin']}><MainLayout><GamesProgressPage /></MainLayout></ProtectedRoute>} />
 
-        <Route path="/superadmin/dashboard" element={<SuperAdminRoute><MainLayout><SuperAdminDashboard /></MainLayout></SuperAdminRoute>} />
-        <Route path="/superadmin/schools" element={<SuperAdminRoute><MainLayout><ManageSchools /></MainLayout></SuperAdminRoute>} />
-        <Route path="/superadmin/admins" element={<SuperAdminRoute><MainLayout><ManageAdmins /></MainLayout></SuperAdminRoute>} />
+        <Route path="/superadmin/dashboard" element={<ProtectedRoute allowedRoles={['superadmin']}><MainLayout><SuperAdminDashboard /></MainLayout></ProtectedRoute>} />
+        <Route path="/superadmin/schools" element={<ProtectedRoute allowedRoles={['superadmin']}><MainLayout><ManageSchools /></MainLayout></ProtectedRoute>} />
+        <Route path="/superadmin/admins" element={<ProtectedRoute allowedRoles={['superadmin']}><MainLayout><ManageAdmins /></MainLayout></ProtectedRoute>} />
         
         <Route path="*" element={<h1 className="text-foreground text-center mt-20">404: Page Not Found</h1>} />
       </Routes>

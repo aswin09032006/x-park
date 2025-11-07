@@ -8,7 +8,7 @@ import { getAvatarUrl } from '../utils/avatar';
 import { logger } from '../services/logger';
 
 const StatCard = ({ title, value, icon: Icon, color }) => (
-    <div className={`rounded-2xl p-6 text-white`} style={{ backgroundColor: color }}>
+    <div className={`rounded-lg p-6 text-white`} style={{ backgroundColor: color }}>
         <div className="flex justify-between items-start mb-4">
             <p className="font-medium">{title}</p>
             <div className="bg-white/20 p-2 rounded-full">
@@ -108,17 +108,17 @@ const AdminDashboard = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {statCards.map(card => <StatCard key={card.title} {...card} />)}
                     </div>
-                    <div className="bg-card p-6 rounded-2xl">
+                    <div className="bg-card p-6 rounded-lg">
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
                             <h2 className="text-xl font-bold">Top performers</h2>
                             <div className="flex flex-wrap items-center gap-3 text-sm w-full md:w-auto">
                                 <div className="relative flex-grow md:flex-grow-0">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                                    <input type="text" placeholder="Search name..." className="bg-input border border-border rounded-lg py-1.5 pl-9 pr-3 text-xs w-full md:w-32 lg:w-40" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                                    <input type="text" placeholder="Search name..." className="bg-input border border-border rounded-lg py-2 pl-9 pr-3 text-sm w-full md:w-40" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                                 </div>
                                 <div className="relative">
                                     <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
-                                    <select className="bg-input border border-border rounded-lg py-1.5 pl-9 pr-3 text-xs appearance-none" value={filterYearGroup} onChange={e => setFilterYearGroup(e.target.value)}>
+                                    <select className="bg-input border border-border rounded-lg py-2 pl-9 pr-3 text-sm appearance-none" value={filterYearGroup} onChange={e => setFilterYearGroup(e.target.value)}>
                                         <option value="All">All Years</option>
                                         {yearGroupOptions.map(year => (<option key={year} value={year}>Year {year}</option>))}
                                     </select>
@@ -142,11 +142,11 @@ const AdminDashboard = () => {
                                             <tr key={p._id} className="border-b border-border last:border-b-0 hover:bg-accent/50 cursor-pointer transition-colors" onClick={() => handleRowClick(p)}>
                                                 <td className="p-3 flex items-center gap-3 min-w-[150px]">
                                                     <img src={getAvatarUrl({ username: p.name, fullName: p.name })} alt={p.name} className="w-8 h-8 rounded-full object-cover" />
-                                                    <span className="truncate">{p.name}</span>
+                                                    <span className="truncate font-medium">{p.name}</span>
                                                 </td>
-                                                <td className="p-3">{p.yearGroup || 'N/A'}</td>
-                                                <td className="p-3">{p.certificates}</td>
-                                                <td className="p-3">{p.badges}</td>
+                                                <td className="p-3 text-muted-foreground">{p.yearGroup || 'N/A'}</td>
+                                                <td className="p-3 text-muted-foreground">{p.certificates}</td>
+                                                <td className="p-3 text-muted-foreground">{p.badges}</td>
                                                 <td className="p-3 font-semibold text-primary">{p.score.toLocaleString()}</td>
                                             </tr>
                                         ))

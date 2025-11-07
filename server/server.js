@@ -128,5 +128,5 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     // Use the standard .info() level for consistency
-    backendLogger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`, { context: 'ServerStartup' });
+    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`, { context: 'ServerStartup' });
 });
