@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
+import { logger } from '../services/logger';
 
 const AdminGameCard = ({ game }) => {
     return (
@@ -27,12 +28,16 @@ const AdminGamesPage = () => {
     const [error, setError] = useState('');
 
     useEffect(() => {
+        const context = 'AdminGamesPage.useEffect';
+        logger.startNewTrace();
         const fetchGames = async () => {
             try {
                 const gamesData = await api('/games');
                 setGames(gamesData);
+                logger.info('Fetched games successfully for admin view.', { context });
             } catch (err) {
                 setError(err.message || 'Failed to fetch games.');
+                logger.error('Failed to fetch games for admin view.', { context, details: { error: err.message } });
             } finally {
                 setLoading(false);
             }
@@ -40,21 +45,11 @@ const AdminGamesPage = () => {
         fetchGames();
     }, []);
 
-    // --- NEW: Group games by category using useMemo for efficiency ---
     const gamesByCategory = useMemo(() => {
-    // First, sort games so Live games come before Coming Soon
-        const sortedGames = [...games].sort((a, b) => {
-            // Live (isComingSoon = false) should come first
-            if (a.isComingSoon === b.isComingSoon) return 0;
-            return a.isComingSoon ? 1 : -1;
-        });
-
-        // Then, group by category
+        const sortedGames = [...games].sort((a, b) => a.isComingSoon - b.isComingSoon);
         return sortedGames.reduce((acc, game) => {
             const category = game.category || 'Uncategorized';
-            if (!acc[category]) {
-                acc[category] = [];
-            }
+            if (!acc[category]) acc[category] = [];
             acc[category].push(game);
             return acc;
         }, {});

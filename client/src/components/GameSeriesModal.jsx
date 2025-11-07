@@ -34,7 +34,7 @@ const ModalGameCard = ({ game, onRateClick }) => {
     };
     
     return (
-    <div className="bg-[#1C1C1C] border border-gray-700 rounded-lg overflow-hidden flex flex-col">
+    <div className="bg-card border border-border rounded-lg overflow-hidden flex flex-col">
         <div className="relative">
             <img src={game.imageUrl} alt={game.title} className="w-full h-auto aspect-video object-cover" />
             {isInProgress && !game.isComingSoon && (
@@ -43,15 +43,15 @@ const ModalGameCard = ({ game, onRateClick }) => {
                         <span>{progress === 100 ? 'Completed' : 'In-progress'}</span>
                         <span>{progress}%</span>
                     </div>
-                    <div className="w-full bg-gray-600 rounded-full h-1.5">
+                    <div className="w-full bg-muted rounded-full h-1.5">
                         <div className="bg-red-500 h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
                     </div>
                 </div>
             )}
         </div>
         <div className="p-4 flex flex-col flex-grow">
-            <h3 className="font-bold text-white text-lg mb-2">{game.title}</h3>
-            <p className="text-gray-400 text-sm leading-relaxed flex-grow">{game.description}</p>
+            <h3 className="font-bold text-card-foreground text-lg mb-2">{game.title}</h3>
+            <p className="text-muted-foreground text-sm leading-relaxed flex-grow">{game.description}</p>
             <div className="flex gap-2 mt-4">
                 {game.gameUrl && !game.isComingSoon ? (
                     <Link 
@@ -62,7 +62,7 @@ const ModalGameCard = ({ game, onRateClick }) => {
                         <Play size={16} className="mr-2 fill-current" /> Play
                     </Link>
                 ) : (
-                    <button className="flex-grow flex items-center justify-center bg-gray-600 text-gray-300 font-medium py-2 px-4 rounded-md cursor-not-allowed">
+                    <button className="flex-grow flex items-center justify-center bg-muted text-muted-foreground font-medium py-2 px-4 rounded-md cursor-not-allowed">
                         Coming Soon
                     </button>
                 )}
@@ -70,36 +70,36 @@ const ModalGameCard = ({ game, onRateClick }) => {
                 {/* --- THIS IS THE FIX: Conditionally render the Rate button or the user's rating --- */}
                 {!game.isComingSoon && (
                     hasRated ? (
-                        <div className="flex items-center justify-center border border-gray-600 text-yellow-400 py-2 px-4 rounded-md" title={`You rated this ${userRating.rating} stars`}>
+                        <div className="flex items-center justify-center border border-border text-yellow-400 py-2 px-4 rounded-md" title={`You rated this ${userRating.rating} stars`}>
                             <Star size={16} className="mr-2 fill-current" /> Rated {userRating.rating}/5
                         </div>
                     ) : (
                         <button 
                             onClick={() => onRateClick(game)}
-                            className="flex items-center justify-center border border-gray-600 text-gray-300 hover:bg-gray-700 py-2 px-4 rounded-md transition-colors"
+                            className="flex items-center justify-center border border-border text-muted-foreground hover:bg-accent py-2 px-4 rounded-md transition-colors"
                         >
                             <Star size={16} className="mr-2" /> Rate
                         </button>
                     )
                 )}
             </div>
-            <div className="border-t border-gray-700 mt-4 pt-3 text-xs text-gray-400 flex justify-between items-center">
+            <div className="border-t border-border mt-4 pt-3 text-xs text-muted-foreground flex justify-between items-center">
                 <div>
-                    <span className="font-semibold text-gray-500">Category</span>
-                    <p className="text-white">{game.category || 'N/A'}</p>
+                    <span className="font-semibold text-muted-foreground">Category</span>
+                    <p className="text-card-foreground">{game.category || 'N/A'}</p>
                 </div>
                 {!game.isComingSoon && 
                 <div>
-                    <span className="font-semibold text-gray-500">Rating</span>
-                    <p className="flex items-center text-white">
+                    <span className="font-semibold text-muted-foreground">Rating</span>
+                    <p className="flex items-center text-card-foreground">
                         <Star size={14} className="text-yellow-400 fill-current mr-1" />
                         {game.averageRating ? game.averageRating.toFixed(1) : 'N/A'}
                     </p>
                 </div>
                 }
                 <div>
-                    <span className="font-semibold text-gray-500">Sponsor</span>
-                    <p className="flex items-center text-white">
+                    <span className="font-semibold text-muted-foreground">Sponsor</span>
+                    <p className="flex items-center text-card-foreground">
                         {game.sponsor || 'N/A'}
                     </p>
                 </div>
@@ -135,7 +135,7 @@ const GameSeriesModal = ({ isOpen, onClose, game, onGameUpdate }) => {
         <>
             <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={onClose}>
                 <div
-                    className="bg-[#0D0D0D] w-full max-w-7xl h-full max-h-[95vh] rounded-2xl overflow-y-auto scrollbar-thin scrollbar-track-gray-900 scrollbar-thumb-gray-700 hover:scrollbar-thumb-gray-600"
+                    className="bg-background w-full max-w-7xl h-full max-h-[95vh] rounded-2xl overflow-y-auto scrollbar-thin scrollbar-track-secondary scrollbar-thumb-muted hover:scrollbar-thumb-accent"
                     onClick={e => e.stopPropagation()}
                 >
                     <div className="relative p-8 md:p-12 h-[350px] flex flex-col justify-end" style={{ backgroundImage: `url(${bg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>

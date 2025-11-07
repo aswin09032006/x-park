@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { Trash2, PlusCircle, ArrowLeft, X } from 'lucide-react';
+import { logger } from '../services/logger';
 
 const ManageAdmins = () => {
     const [admins, setAdmins] = useState([]);
@@ -9,13 +10,12 @@ const ManageAdmins = () => {
     const [formData, setFormData] = useState({ username: '', email: '', schoolId: '' });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-
-    // --- NEW: State for school search autocomplete ---
     const [schoolSearch, setSchoolSearch] = useState('');
     const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
     const schoolInputRef = useRef(null);
 
     const fetchData = useCallback(async () => {
+        const context = 'ManageAdmins.fetchData';
         try {
             setLoading(true);
             const [adminsData, schoolsData] = await Promise.all([
@@ -24,58 +24,64 @@ const ManageAdmins = () => {
             ]);
             setAdmins(adminsData);
             setSchools(schoolsData);
+            logger.info('Fetched admins and schools.', { context });
         } catch (err) {
             setError(err.message || 'Failed to fetch data.');
+            logger.error('Failed to fetch admins and schools.', { context, details: { error: err.message } });
         } finally {
             setLoading(false);
         }
     }, []);
 
     useEffect(() => {
+        logger.startNewTrace();
         fetchData();
     }, [fetchData]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (schoolInputRef.current && !schoolInputRef.current.contains(event.target)) {
-                setShowSchoolDropdown(false);
-            }
+            if (schoolInputRef.current && !schoolInputRef.current.contains(event.target)) setShowSchoolDropdown(false);
         };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const handleInputChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
+    const handleInputChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
     const handleCreateAdmin = async (e) => {
         e.preventDefault();
+        const context = 'ManageAdmins.handleCreateAdmin';
+        logger.startNewTrace();
+        logger.info('Attempting to create a new admin.', { context, details: { username: formData.username, email: formData.email } });
         try {
             const data = await api('/superadmin/admins', 'POST', formData);
-            alert(data.msg); // Show success message from backend
+            alert(data.msg);
             setFormData({ username: '', email: '', schoolId: '' });
             setSchoolSearch('');
             fetchData();
+            logger.success('Admin created successfully.', { context });
         } catch (err) {
             alert(`Error: ${err.message}`);
+            logger.error('Failed to create admin.', { context, details: { error: err.message } });
         }
     };
 
     const handleDeleteAdmin = async (adminId) => {
+        const context = 'ManageAdmins.handleDeleteAdmin';
+        logger.startNewTrace();
         if (!window.confirm('Are you sure you want to delete this admin?')) return;
+        logger.warn('Attempting to delete an admin.', { context, details: { adminId } });
         try {
             await api(`/superadmin/admins/${adminId}`, 'DELETE');
             fetchData();
+            logger.success('Admin deleted successfully.', { context, details: { adminId } });
         } catch (err) {
             alert(`Error: ${err.message}`);
+            logger.error('Failed to delete admin.', { context, details: { adminId, error: err.message } });
         }
     };
 
-    const filteredSchools = useMemo(() => {
-        if (!schoolSearch) return schools;
-        return schools.filter(s => s.name.toLowerCase().includes(schoolSearch.toLowerCase()));
-    }, [schoolSearch, schools]);
+    const filteredSchools = useMemo(() => schools.filter(s => s.name.toLowerCase().includes(schoolSearch.toLowerCase())), [schoolSearch, schools]);
 
     const handleSelectSchool = (school) => {
         setFormData({ ...formData, schoolId: school._id });
@@ -84,12 +90,11 @@ const ManageAdmins = () => {
     };
 
     return (
-        <div className="p-8 max-w-6xl mx-auto text-gray-200">
+        <div className="p-8 max-w-6xl mx-auto text-foreground">
             <Link to="/superadmin/dashboard" className="flex items-center text-muted-foreground hover:text-foreground mb-6">
                 <ArrowLeft size={18} className="mr-2" /> Back to Dashboard
             </Link>
             <h1 className="text-3xl font-bold mb-8">Manage School Admins</h1>
-
             <form onSubmit={handleCreateAdmin} className="mb-8 p-6 bg-card border border-border rounded-lg grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                 <div>
                     <label className="block text-sm text-muted-foreground mb-1">Username</label>
@@ -99,36 +104,20 @@ const ManageAdmins = () => {
                     <label className="block text-sm text-muted-foreground mb-1">Email</label>
                     <input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full bg-input border border-border rounded-md px-3 py-2" required />
                 </div>
-                
-                {/* --- NEW: Autocomplete School Search Input --- */}
                 <div className="relative" ref={schoolInputRef}>
                     <label className="block text-sm text-muted-foreground mb-1">School</label>
-                    <input 
-                        type="text"
-                        value={schoolSearch}
-                        onChange={(e) => { setSchoolSearch(e.target.value); setFormData({...formData, schoolId: ''}); }}
-                        onFocus={() => setShowSchoolDropdown(true)}
-                        placeholder="Search for a school..."
-                        className="w-full bg-input border border-border rounded-md px-3 py-2"
-                        required 
-                    />
+                    <input type="text" value={schoolSearch} onChange={(e) => { setSchoolSearch(e.target.value); setFormData({...formData, schoolId: ''}); }} onFocus={() => setShowSchoolDropdown(true)} placeholder="Search for a school..." className="w-full bg-input border border-border rounded-md px-3 py-2" required />
                     {formData.schoolId && schoolSearch && <button type="button" onClick={() => {setSchoolSearch(''); setFormData({...formData, schoolId: ''})}} className="absolute right-2 top-8 text-muted-foreground"><X size={16} /></button>}
                     {showSchoolDropdown && (
                         <div className="absolute z-10 top-full left-0 mt-1 w-full bg-secondary border border-border rounded-md max-h-60 overflow-y-auto">
-                           {filteredSchools.length > 0 ? filteredSchools.map(s => (
-                                <div key={s._id} onClick={() => handleSelectSchool(s)} className="p-2 hover:bg-accent cursor-pointer">
-                                    {s.name}
-                                </div>
-                            )) : <div className="p-2 text-muted-foreground">No schools found</div>}
+                           {filteredSchools.length > 0 ? filteredSchools.map(s => (<div key={s._id} onClick={() => handleSelectSchool(s)} className="p-2 hover:bg-accent cursor-pointer">{s.name}</div>)) : <div className="p-2 text-muted-foreground">No schools found</div>}
                         </div>
                     )}
                 </div>
-
                 <button type="submit" className="bg-primary text-primary-foreground font-bold py-2 px-4 rounded-md flex items-center justify-center gap-2 hover:opacity-90">
                     <PlusCircle size={18} /> Add & Invite Admin
                 </button>
             </form>
-
             <div className="bg-card border border-border rounded-lg overflow-hidden">
                 <table className="w-full text-left">
                      <thead className="bg-secondary">
@@ -147,7 +136,6 @@ const ManageAdmins = () => {
                                 <td className="p-4">{admin.username}</td>
                                 <td className="p-4 text-muted-foreground">{admin.email}</td>
                                 <td className="p-4">{admin.school?.name || 'N/A'}</td>
-                                {/* --- NEW: Display School Capacity --- */}
                                 <td className="p-4 text-muted-foreground">{admin.school?.capacity ?? 'N/A'}</td>
                                 <td className="p-4 text-right">
                                     <button onClick={() => handleDeleteAdmin(admin._id)} className="text-destructive hover:opacity-75">

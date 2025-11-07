@@ -104,11 +104,11 @@ return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Bulk Invite Students">
         <div className='max-h-[70vh] space-y-6 y-auto overflow-y-auto pr-2'>
         {/* --- THIS IS THE FIX: Updated instructions --- */}
-        <p className="text-gray-400 text-sm mb-4">
+        <p className="text-muted-foreground text-sm mb-4">
             Upload a CSV with headers: `firstname`, `lastname`, `email` (required), and `yearGroup` (optional, must be a number from 7 to 13).
         </p>
         <form onSubmit={handleSubmit} className="space-y-6">
-            <label className="w-full flex items-center gap-3 px-4 py-3 bg-[#222] rounded-md cursor-pointer border border-gray-700">
+            <label className="w-full flex items-center gap-3 px-4 py-3 bg-input rounded-md cursor-pointer border border-border">
                 <FileText size={20} />
                 <span className="truncate">{file ? file.name : "Choose CSV file..."}</span>
                 <input type="file" accept=".csv" onChange={handleFileChange} className="hidden" />

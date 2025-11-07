@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import AuthCarouselLayout from '../components/layouts/AuthCarouselLayout';
+import { logger } from '../services/logger';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -13,14 +14,20 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    logger.startNewTrace();
+    const context = 'LoginPage.handleSubmit';
     setLoading(true);
     setError('');
+    
+    logger.info('Login attempt started.', { context, details: { email } });
+
     try {
       const data = await api('/auth/login', 'POST', { email, password });
-      // Pass the role to the login function
+      logger.success('Login API call successful.', { context, details: { email, role: data.role } });
       login(data.accessToken, data.refreshToken, data.role);
     } catch (err) {
       setError(err.message);
+      logger.error('Login failed.', { context, details: { email, error: { message: err.message, stack: err.stack } } });
     } finally {
       setLoading(false);
     }
@@ -48,9 +55,6 @@ const LoginPage = () => {
           {loading ? 'Signing In...' : 'Sign In'}
         </button>
       </form>
-      {/* <p className="mt-6 text-center text-sm text-muted-foreground">
-        New user? <Link to="/register" className="text-blue-500 hover:underline">Register here</Link>
-      </p> */}
     </AuthCarouselLayout>
   );
 };

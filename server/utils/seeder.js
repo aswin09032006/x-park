@@ -1,7 +1,8 @@
+// --- /backend/seeder.js ---
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const School = require('../models/School');
-const User = require('../models/User');
+const School = require('./models/School');
+const User = require('./models/User');
 
 dotenv.config();
 
@@ -16,7 +17,6 @@ const connect = async () => {
     }
 };
 
-// The emailDomains property has been removed from this data
 const schools = [
     { name: 'Northwood High School' },
     { name: 'Riverdale Academy' },
@@ -36,7 +36,6 @@ const importData = async () => {
         const createdSchools = await School.insertMany(schools);
         console.log('Schools seeded successfully.');
 
-        // ... (rest of the seeder function is unchanged)
         const adminEmail = process.env.ADMIN_EMAIL;
         const adminPassword = process.env.ADMIN_PASSWORD;
         if (!adminEmail || !adminPassword) {

@@ -1,40 +1,38 @@
 const School = require('../models/School');
-const PreRegisteredStudent = require('../models/PreRegisteredStudent'); // Import this model
+const PreRegisteredStudent = require('../models/PreRegisteredStudent');
+const { backendLogger } = require('../config/logger');
 
-// @desc    Get all schools
-// @route   GET /api/schools
-// @access  Public
 exports.getSchools = async (req, res) => {
+    const context = 'schoolController.getSchools';
+    const { correlation_id } = req;
     try {
         const schools = await School.find({}).sort({ name: 1 });
         res.json(schools);
     } catch (err) {
-        console.error(err);
+        backendLogger.error('Failed to get schools.', { context, correlation_id, details: { error: err.message, stack: err.stack } });
         res.status(500).json({ msg: 'Server Error' });
     }
 };
 
-// @desc    Get a single school by its slug
-// @route   GET /api/schools/slug/:slug
-// @access  Public
 exports.getSchoolBySlug = async (req, res) => {
+    const context = 'schoolController.getSchoolBySlug';
+    const { correlation_id } = req;
     try {
         const school = await School.findOne({ slug: req.params.slug });
         if (!school) {
+            backendLogger.warn('School not found by slug.', { context, correlation_id, details: { slug: req.params.slug } });
             return res.status(404).json({ msg: 'School not found.' });
         }
         res.json(school);
     } catch (err) {
-        console.error(err);
+        backendLogger.error('Failed to get school by slug.', { context, correlation_id, details: { slug: req.params.slug, error: err.message, stack: err.stack } });
         res.status(500).json({ msg: 'Server Error' });
     }
 };
 
-// --- THIS FUNCTION IS THE CORE OF THE NEW LOGIC ---
-// @desc    Find a school by checking the pre-registered student list
-// @route   GET /api/schools/email-lookup
-// @access  Public
 exports.getSchoolByPreRegisteredEmail = async (req, res) => {
+    const context = 'schoolController.getSchoolByPreRegisteredEmail';
+    const { correlation_id } = req;
     const { email } = req.query;
 
     if (!email) {
@@ -42,21 +40,21 @@ exports.getSchoolByPreRegisteredEmail = async (req, res) => {
     }
 
     try {
-        // Find an invitation that is still pending
         const preReg = await PreRegisteredStudent.findOne({ 
             email: email.toLowerCase(),
             status: 'pending' 
-        }).populate('school'); // Use populate to get the full school details
+        }).populate('school');
 
         if (!preReg || !preReg.school) {
+            backendLogger.info('Email lookup did not find a pre-registered school.', { context, correlation_id, details: { email } });
             return res.status(404).json({ msg: 'This email has not been pre-registered by an administrator.' });
         }
-
-        // Return the school object associated with the invitation
+        
+        backendLogger.success('Found pre-registered school via email lookup.', { context, correlation_id, details: { email, schoolId: preReg.school._id } });
         res.json(preReg.school);
 
     } catch (err) {
-        console.error(err);
+        backendLogger.error('Error during school email lookup.', { context, correlation_id, details: { email, error: err.message, stack: err.stack } });
         res.status(500).json({ msg: 'Server Error' });
     }
 };

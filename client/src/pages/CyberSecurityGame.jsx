@@ -1,109 +1,82 @@
 import React, { useEffect } from 'react';
 import { useGames } from '../context/GameContext';
 import { api } from '../services/api';
+import { logger } from '../services/logger';
 
 const GAME_ID = "cyber-security";
-const LOCAL_STORAGE_KEY = 'gameData'; // The key the game reads from localStorage
+const LOCAL_STORAGE_KEY = 'gameData';
 
 const CyberSecurityGame = () => {
     const { stopGame } = useGames();
-
-    const log = (message, ...args) => console.log(`%c[React Parent] ${message}`, 'color: #00dd00; font-weight: bold;', ...args);
-    const errLog = (message, ...args) => console.error(`%c[React Parent ERROR] ${message}`, 'color: #ff0000; font-weight: bold;', ...args);
-    const interceptLog = (message, ...args) => console.log(`%c[Message Listener] ${message}`, 'color: #0000ff; font-weight: bold;', ...args);
+    const context = `CyberSecurityGame`;
 
     const saveProgressToBackend = async (payload) => {
-        log('>>> SAVE PROCESS INITIATED >>>', payload);
+        logger.info('>>> SAVE PROCESS INITIATED >>>', { context, details: payload });
         try {
             await api(`/users/me/gamedata/${GAME_ID}`, 'POST', payload);
-            log('<<< BACKEND SAVE SUCCESSFUL <<<');
+            logger.success('<<< BACKEND SAVE SUCCESSFUL <<<', { context });
         } catch (err) {
-            errLog('!!! BACKEND SAVE FAILED !!! API call returned an error.', err);
+            logger.error('!!! BACKEND SAVE FAILED !!!', { context, details: { error: err.message } });
         }
     };
 
     useEffect(() => {
-        // --- 1. PLATFORM -> GAME: Send existing data to the game on load ---
+        logger.startNewTrace();
+        logger.info('CyberSecurityGame component mounted.', { context });
+
         const initializeGameData = async () => {
             try {
                 const userGameData = await api(`/users/me/gamedata/${GAME_ID}`);
-                log('[INIT] Loaded user progress from backend:', userGameData);
+                logger.info('[INIT] Loaded user progress from backend.', { context, details: userGameData });
 
                 const high_score = [];
-                const isNewPlayer = !userGameData.highScores || Object.keys(userGameData.highScores).length === 0;
-
-                if (isNewPlayer) {
-                    log("[INIT] New player. Sending empty high_score to game.");
-                } else {
-                    log('[INIT] Returning player. Sending existing high_score to game.');
-                    if (userGameData.highScores["1"]) {
-                         high_score.push({ stage_id: 1, high_score: userGameData.highScores["1"] });
-                    }
+                if (userGameData.highScores && userGameData.highScores["1"]) {
+                    high_score.push({ stage_id: 1, high_score: userGameData.highScores["1"] });
                 }
                 
-                // The game inside the iframe will read this from localStorage on startup.
-                // It expects an empty `stages_completed` array, so we provide it.
                 const initData = JSON.stringify({ data: { stages_completed: [], high_score } });
-                log('[INIT] Sending initial state to Unity via localStorage:', initData);
                 window.localStorage.setItem(LOCAL_STORAGE_KEY, initData);
-
+                logger.info('[INIT] Sent initial state to Unity via localStorage.', { context, details: { initData } });
             } catch (e) {
-                errLog("Failed to load initial progress for the game.", e);
+                logger.error("Failed to load initial progress for the game.", { context, details: { error: e.message } });
                 window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ data: { stages_completed: [], high_score: [] } }));
             }
         };
-
         initializeGameData();
 
-        // --- 2. GAME -> PLATFORM: Listen for the final data from the game ---
         const handleGameMessage = (event) => {
             const message = event.data;
-            if (typeof message !== 'string' || !message.startsWith("Unity sent JSON to page:")) {
-                return;
-            }
-
-            interceptLog('Final game data packet received via postMessage.');
+            if (typeof message !== 'string' || !message.startsWith("Unity sent JSON to page:")) return;
+            logger.info('Final game data packet received via postMessage.', { context });
 
             try {
                 const jsonString = message.substring(message.indexOf('{'));
                 const gameData = JSON.parse(jsonString);
-
-                const finalScore = gameData.high_score?.[0] || 0;
-                const finalBadge = gameData.badges?.[0] || 0;
-                const finalXp = gameData.xp_earned?.[0] || 0;
-
                 const finalPayload = {
                     stage: 1,
                     status: 2,
-                    score: parseInt(finalScore) || 0,
-                    badge: parseInt(finalBadge) || 0,
-                    xp: parseInt(finalXp) || 0,
-                    certificate: 1 // Award certificate on game completion
+                    score: parseInt(gameData.high_score?.[0]) || 0,
+                    badge: parseInt(gameData.badges?.[0]) || 0,
+                    xp: parseInt(gameData.xp_earned?.[0]) || 0,
+                    certificate: 1
                 };
-                
                 saveProgressToBackend(finalPayload);
-
             } catch (e) {
-                errLog("Failed to parse or process JSON from postMessage.", e);
+                logger.error("Failed to parse or process JSON from postMessage.", { context, details: { error: e.message, rawMessage: message } });
             }
         };
-
         window.addEventListener("message", handleGameMessage);
 
-        // --- 3. CLEANUP ---
         return () => {
             window.removeEventListener("message", handleGameMessage);
             stopGame('1');
-            log('Component unmounted. Cleaned up listener and timer.');
+            logger.info('Component unmounted. Cleaned up listener.', { context });
         };
-    }, [stopGame]);
+    }, []);
 
     return (
         <div className="w-full h-full overflow-hidden bg-background">
-            <a 
-                href="/dashboard" 
-                className="absolute top-4 left-4 z-50 text-white font-light py-2 px-4 rounded-md transition"
-            >
+            <a href="/dashboard" className="absolute top-4 left-4 z-50 text-foreground font-light py-2 px-4 rounded-md transition hover:bg-accent">
                 &larr; Back to Dashboard
             </a>
             <iframe

@@ -10,12 +10,12 @@ const Modal = ({ isOpen, onClose, title, children }) => {
             onClick={onClose}
         >
             <div
-                className="relative bg-[#1C1C1C] text-gray-200 rounded-lg w-full max-w-lg border border-gray-700 shadow-xl"
+                className="relative bg-card text-card-foreground rounded-lg w-full max-w-lg border border-border shadow-xl"
                 onClick={e => e.stopPropagation()}
             >
-                <div className="flex justify-between items-center p-4 border-b border-gray-700">
-                    <h3 className="text-lg font-bold text-white">{title}</h3>
-                    <button onClick={onClose} className="text-gray-500 hover:text-white transition">
+                <div className="flex justify-between items-center p-4 border-b border-border">
+                    <h3 className="text-lg font-bold text-card-foreground">{title}</h3>
+                    <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition">
                         <X size={24} />
                     </button>
                 </div>

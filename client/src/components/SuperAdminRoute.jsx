@@ -6,10 +6,9 @@ const SuperAdminRoute = ({ children }) => {
   const { user, isAuthenticated, loading } = useAuth();
 
   if (loading) {
-    return <div>Loading...</div>; // Or a spinner component
+    return <div>Loading...</div>;
   }
 
-  // User must be authenticated AND have the 'superadmin' role
   if (!isAuthenticated || user?.role !== 'superadmin') {
     return <Navigate to="/" replace />;
   }

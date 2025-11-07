@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../services/api';
 import AuthCarouselLayout from '../components/layouts/AuthCarouselLayout';
+import { logger } from '../services/logger';
 
 const UpdatePasswordPage = () => {
   const [password, setPassword] = useState('');
@@ -13,17 +14,21 @@ const UpdatePasswordPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const context = 'UpdatePasswordPage.handleSubmit';
+    logger.startNewTrace();
     setLoading(true);
     setError('');
     setSuccess('');
+    logger.info('Attempting to update password with reset token.', { context });
 
     try {
       const data = await api(`/auth/reset-password/${resetToken}`, 'PUT', { password });
       setSuccess(`${data.msg} Redirecting to login...`);
-
+      logger.success('Password updated successfully.', { context });
       setTimeout(() => navigate('/'), 2000);
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.');
+      logger.error('Failed to update password.', { context, details: { error: err.message } });
     } finally {
       setLoading(false);
     }
@@ -33,38 +38,14 @@ const UpdatePasswordPage = () => {
     <AuthCarouselLayout>
       <h2 className="text-3xl font-bold mb-2">Set Your New Password</h2>
       <p className="text-muted-foreground mb-8">Please enter a new password below.</p>
-
       <form onSubmit={handleSubmit}>
         <div className="mb-6">
-          <label
-            htmlFor="password"
-            className="block text-sm text-muted-foreground mb-2"
-          >
-            New Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full px-4 py-3 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder="Enter your new password"
-          />
+          <label htmlFor="password" className="block text-sm text-muted-foreground mb-2">New Password</label>
+          <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full px-4 py-3 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Enter your new password" />
         </div>
-
-        {error && (
-          <p className="text-destructive text-sm text-center mb-4">{error}</p>
-        )}
-        {success && (
-          <p className="text-green-500 text-sm text-center mb-4">{success}</p>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading || !!success}
-          className="w-full bg-primary hover:opacity-90 text-primary-foreground font-bold py-3 rounded-md transition disabled:opacity-50"
-        >
+        {error && <p className="text-destructive text-sm text-center mb-4">{error}</p>}
+        {success && <p className="text-green-500 text-sm text-center mb-4">{success}</p>}
+        <button type="submit" disabled={loading || !!success} className="w-full bg-primary hover:opacity-90 text-primary-foreground font-bold py-3 rounded-md transition disabled:opacity-50">
           {loading ? 'Updating...' : 'Update Password'}
         </button>
       </form>

@@ -27,7 +27,7 @@ import UpdatePasswordPage from './pages/UpdatePasswordPage';
 import GamesProgressPage from './pages/GamesProgressPage';
 
 const MainLayout = ({ children }) => (
-    <div className="bg-[#111] min-h-screen"><Navbar /><main className="pt-20">{children}</main></div>
+    <div className="bg-background min-h-screen"><Navbar /><main className="pt-20">{children}</main></div>
 );
 const GameLayout = ({ children }) => (
     <div className="bg-background h-screen w-screen overflow-hidden">{children}</div>
@@ -67,7 +67,7 @@ function App() {
         <Route path="/superadmin/schools" element={<SuperAdminRoute><MainLayout><ManageSchools /></MainLayout></SuperAdminRoute>} />
         <Route path="/superadmin/admins" element={<SuperAdminRoute><MainLayout><ManageAdmins /></MainLayout></SuperAdminRoute>} />
         
-        <Route path="*" element={<h1 className="text-white text-center mt-20">404: Page Not Found</h1>} />
+        <Route path="*" element={<h1 className="text-foreground text-center mt-20">404: Page Not Found</h1>} />
       </Routes>
   );
 }

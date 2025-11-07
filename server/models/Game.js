@@ -9,26 +9,14 @@ const GameSchema = new mongoose.Schema({
     isComingSoon: { type: Boolean, default: false },
     sponsor: { type: String, default: 'Metamorphs' },
 
-    // --- START: RATING FIELD UPDATES ---
     ratings: [{
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
         rating: { type: Number, required: true, min: 1, max: 5 }
     }],
-    averageRating: {
-        type: Number,
-        default: 0,
-        min: 0,
-        max: 5
-    },
-    numRatings: {
-        type: Number,
-        default: 0
-    }
-    // --- END: RATING FIELD UPDATES ---
-
+    averageRating: { type: Number, default: 0, min: 0, max: 5 },
+    numRatings: { type: Number, default: 0 }
 }, { timestamps: true });
 
-// Middleware to recalculate average rating before saving
 GameSchema.pre('save', function(next) {
     if (this.isModified('ratings')) {
         this.numRatings = this.ratings.length;
@@ -41,6 +29,5 @@ GameSchema.pre('save', function(next) {
     }
     next();
 });
-
 
 module.exports = mongoose.model('Game', GameSchema);

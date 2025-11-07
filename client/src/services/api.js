@@ -1,43 +1,44 @@
-const API_URL = 'https://api-xpark.creozen.co.uk/api';
+import { logger } from './logger';
 
-// --- NEW: A dedicated function for public (unauthenticated) API calls ---
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 export const publicApi = async (endpoint, method = 'GET', body = null) => {
+    const context = `publicApi.${method}`;
+    const correlation_id = logger.getCurrentCorrelationId();
     try {
         const config = {
             method,
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Correlation-ID': correlation_id
+            },
         };
 
-        if (body) {
-            config.body = JSON.stringify(body);
-        }
+        if (body) config.body = JSON.stringify(body);
 
         const response = await fetch(`${API_URL}${endpoint}`, config);
         const data = await response.json();
 
-        // If the response is not OK, throw an error with the message from the backend
-        if (!response.ok) {
-            throw new Error(data.msg || 'An API error occurred');
-        }
-
+        if (!response.ok) throw new Error(data.msg || 'An API error occurred');
         return data;
     } catch (error) {
-        console.error('Public API call failed:', error.message);
-        throw error; // Re-throw the error to be caught by the component
+        logger.error(`Public API call failed: ${error.message}`, { context, details: { endpoint, error: { message: error.message } } });
+        throw error;
     }
 };
 
-
-// --- THIS FUNCTION IS FOR AUTHENTICATED CALLS ONLY ---
 const refreshToken = async () => {
+    const context = 'api.refreshToken';
+    const correlation_id = logger.getCurrentCorrelationId();
     const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) {
-        throw new Error('No refresh token available');
-    }
+    if (!refreshToken) throw new Error('No refresh token available');
 
     const response = await fetch(`${API_URL}/auth/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'X-Correlation-ID': correlation_id
+        },
         body: JSON.stringify({ refreshToken }),
     });
 
@@ -53,10 +54,15 @@ const refreshToken = async () => {
 };
 
 export const api = async (endpoint, method = 'GET', body = null, isFormData = false) => {
+    const context = `api.${method}`;
     let accessToken = localStorage.getItem('accessToken');
     
     const makeRequest = async (token) => {
-        const config = { method, headers: {} };
+        const correlation_id = logger.getCurrentCorrelationId();
+        const config = { 
+            method, 
+            headers: { 'X-Correlation-ID': correlation_id } 
+        };
 
         if (!isFormData) {
             config.headers['Content-Type'] = 'application/json';
@@ -65,31 +71,27 @@ export const api = async (endpoint, method = 'GET', body = null, isFormData = fa
             if (body) config.body = body;
         }
 
-        if (token) {
-            config.headers['Authorization'] = `Bearer ${token}`;
-        }
+        if (token) config.headers['Authorization'] = `Bearer ${token}`;
 
         const response = await fetch(`${API_URL}${endpoint}`, config);
 
         if (response.status === 401 || response.status === 403) {
             try {
+                logger.warn('Access token expired/invalid, attempting refresh.', { context, details: { endpoint } });
                 const newAccessToken = await refreshToken();
+                logger.success('Access token refreshed successfully.', { context });
                 return makeRequest(newAccessToken); 
             } catch (refreshError) {
-                // If refresh fails, it will propagate the error, which is caught below.
-                // We also need to specifically handle cases where the original error was not due to an expired token.
-                const originalData = await response.json();
+                logger.error('Token refresh failed, forcing logout.', { context, details: { error: { message: refreshError.message } } });
+                const originalData = await response.json().catch(() => ({}));
                 const error = new Error(originalData.msg || refreshError.message);
-                error.data = originalData; // Attach full data
+                error.data = originalData;
                 throw error;
             }
         }
         
         const data = await response.json();
         if (!response.ok) {
-            // --- THIS IS THE FIX ---
-            // Create a new Error object but also attach the full response data to it.
-            // This preserves the 'details' object for the frontend to use.
             const error = new Error(data.msg || data.errors?.[0]?.msg || 'An API error occurred');
             error.data = data;
             throw error;
@@ -100,7 +102,7 @@ export const api = async (endpoint, method = 'GET', body = null, isFormData = fa
     try {
         return await makeRequest(accessToken);
     } catch (error) {
-        console.error('API call failed:', error.message);
+        logger.error(`API call failed: ${error.message}`, { context, details: { endpoint, error: error.data || { message: error.message } } });
         throw error;
     }
 };

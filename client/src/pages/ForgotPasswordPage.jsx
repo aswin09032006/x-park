@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import AuthCarouselLayout from '../components/layouts/AuthCarouselLayout';
 import { ArrowLeft } from 'lucide-react';
+import { logger } from '../services/logger';
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
@@ -12,12 +13,17 @@ const ForgotPasswordPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const context = 'ForgotPasswordPage.handleSubmit';
+    logger.startNewTrace();
     setLoading(true); setError(''); setSuccess('');
+    logger.info('Forgot password request initiated.', { context, details: { email } });
     try {
       const data = await api('/auth/forgot-password', 'POST', { email });
       setSuccess(data.msg);
+      logger.success('Forgot password request successful.', { context, details: { email } });
     } catch (err) {
       setError(err.message);
+      logger.error('Forgot password request failed.', { context, details: { email, error: err.message } });
     } finally {
       setLoading(false);
     }

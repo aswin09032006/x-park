@@ -3,27 +3,30 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { publicApi } from '../services/api';
 import AuthCarouselLayout from '../components/layouts/AuthCarouselLayout';
 import { Loader2 } from 'lucide-react';
+import { logger } from '../services/logger';
 
 const InvitedRegisterPage = () => {
     const { token } = useParams();
     const navigate = useNavigate();
-
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [studentData, setStudentData] = useState(null);
-
-    // --- THIS IS THE FIX: Removed phoneNumber state ---
     const [password, setPassword] = useState('');
     const [rePassword, setRePassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
+        const context = 'InvitedRegisterPage.useEffect';
+        logger.startNewTrace();
         const verifyToken = async () => {
             try {
+                logger.info('Verifying invitation token.', { context, details: { token } });
                 const data = await publicApi(`/auth/verify-invite/${token}`);
                 setStudentData(data);
+                logger.success('Invitation token verified successfully.', { context });
             } catch (err) {
                 setError(err.message || 'This invitation link is invalid or has expired.');
+                logger.error('Invitation token verification failed.', { context, details: { token, error: err.message } });
             } finally {
                 setLoading(false);
             }
@@ -33,6 +36,8 @@ const InvitedRegisterPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const context = 'InvitedRegisterPage.handleSubmit';
+        logger.startNewTrace();
         if (password !== rePassword) {
             setError('Passwords do not match.');
             return;
@@ -40,23 +45,23 @@ const InvitedRegisterPage = () => {
         
         setIsSubmitting(true);
         setError('');
+        logger.info('Completing invited registration.', { context });
 
         try {
-            // --- THIS IS THE FIX: Payload no longer includes phoneNumber ---
             const payload = { password };
             const response = await publicApi(`/auth/complete-invite/${token}`, 'POST', payload);
+            logger.success('Invited registration completed successfully.', { context });
             alert(response.msg);
             navigate('/');
         } catch (err) {
             setError(err.message);
+            logger.error('Invited registration failed.', { context, details: { error: err.message } });
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    if (loading) {
-        return <div className="text-white text-center p-8">Verifying invitation...</div>;
-    }
+    if (loading) return <div className="text-foreground text-center p-8">Verifying invitation...</div>;
 
     return (
         <AuthCarouselLayout>
@@ -74,8 +79,6 @@ const InvitedRegisterPage = () => {
                         Your username will be <span className="font-bold text-cyan-400">{studentData.username}</span>. 
                         Please complete your registration below to activate your account.
                     </p>
-                    
-                    {/* --- THIS IS THE FIX: Removed phoneNumber input field --- */}
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm text-muted-foreground mb-2" htmlFor="password">Password</label>
@@ -86,9 +89,7 @@ const InvitedRegisterPage = () => {
                             <input id="re-password" type="password" value={rePassword} onChange={(e) => setRePassword(e.target.value)} required className="w-full px-4 py-3 bg-input border border-border rounded-md" />
                         </div>
                     </div>
-                    
                     {error && <p className="text-destructive text-sm text-center my-4">{error}</p>}
-
                     <button type="submit" disabled={isSubmitting} className="w-full mt-6 bg-primary text-primary-foreground font-bold py-3 rounded-md transition disabled:opacity-50">
                         {isSubmitting ? <Loader2 className="animate-spin mx-auto" /> : 'Complete Registration'}
                     </button>

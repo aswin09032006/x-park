@@ -9,10 +9,8 @@ export const ThemeProvider = ({ children }) => {
 
     useEffect(() => {
         const root = window.document.documentElement;
-        
         root.classList.remove('light', 'dark');
         root.classList.add(theme);
-        
         localStorage.setItem('theme', theme);
     }, [theme]);
 
@@ -20,10 +18,7 @@ export const ThemeProvider = ({ children }) => {
         setTheme(prevTheme => (prevTheme === 'dark' ? 'light' : 'dark'));
     };
 
-    const value = {
-        theme,
-        toggleTheme,
-    };
+    const value = { theme, toggleTheme };
 
     return (
         <ThemeContext.Provider value={value}>

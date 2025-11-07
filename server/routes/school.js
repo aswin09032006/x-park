@@ -4,8 +4,6 @@ const { getSchools, getSchoolBySlug, getSchoolByPreRegisteredEmail } = require('
 
 router.get('/', getSchools);
 router.get('/slug/:slug', getSchoolBySlug);
-
-// This route replaces the old domain lookup
 router.get('/email-lookup', getSchoolByPreRegisteredEmail);
 
 module.exports = router;

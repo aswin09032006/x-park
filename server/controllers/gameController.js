@@ -1,30 +1,29 @@
 const Game = require('../models/Game');
+const { backendLogger } = require('../config/logger');
 
-// @desc    Get all games from the database
-// @route   GET /api/games
-// @access  Private
 exports.getGames = async (req, res) => {
+    const context = 'gameController.getGames';
+    const { correlation_id } = req;
     try {
-        // This now correctly fetches the games that were added by the seeder.
         const games = await Game.find({});
         res.json(games);
     } catch (err) {
-        console.error(err);
+        backendLogger.error('Failed to fetch games.', { context, correlation_id, details: { error: err.message, stack: err.stack } });
         res.status(500).json({ msg: 'Server Error' });
     }
 };
 
-// @desc    Rate a game
-// @route   POST /api/games/:id/rate
-// @access  Private
 exports.rateGame = async (req, res) => {
     const { rating } = req.body;
     const { id: gameId } = req.params;
     const userId = req.user.id;
+    const context = 'gameController.rateGame';
+    const { correlation_id } = req;
 
     try {
         const game = await Game.findById(gameId);
         if (!game) {
+            backendLogger.warn('Attempted to rate a non-existent game.', { context, correlation_id, details: { gameId, userId } });
             return res.status(404).json({ msg: 'Game not found' });
         }
 
@@ -37,11 +36,12 @@ exports.rateGame = async (req, res) => {
         }
 
         await game.save();
-
+        
+        backendLogger.success(`User rated game successfully.`, { context, correlation_id, details: { userId, gameId, rating } });
         res.json(game);
 
     } catch (err) {
-        console.error(err);
+        backendLogger.error('Failed to rate game.', { context, correlation_id, details: { userId, gameId, error: err.message, stack: err.stack } });
         res.status(500).json({ msg: 'Server Error' });
     }
 };

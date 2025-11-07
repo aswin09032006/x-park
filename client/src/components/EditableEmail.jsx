@@ -132,19 +132,19 @@ const EditableEmail = ({ subject, setSubject, body, setBody, studentFirstNamePre
     };
 
     return (
-        <div className="space-y-4 border border-gray-700 rounded-lg p-4 bg-[#222]">
-            <div className="flex border-b border-gray-600">
+        <div className="space-y-4 border border-border rounded-lg p-4 bg-secondary">
+            <div className="flex border-b border-border">
                 <button
                     type="button"
                     onClick={() => setActiveTab('editor')}
-                    className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold transition-colors ${activeTab === 'editor' ? 'border-b-2 border-blue-500 text-white' : 'text-gray-400 hover:text-white'}`}
+                    className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold transition-colors ${activeTab === 'editor' ? 'border-b-2 border-primary text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                 >
                     <Edit3 size={16} /> Edit Email
                 </button>
                 <button
                     type="button"
                     onClick={() => setActiveTab('preview')}
-                    className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold transition-colors ${activeTab === 'preview' ? 'border-b-2 border-blue-500 text-white' : 'text-gray-400 hover:text-white'}`}
+                    className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold transition-colors ${activeTab === 'preview' ? 'border-b-2 border-primary text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                 >
                     <Eye size={16} /> Preview
                 </button>
@@ -153,26 +153,26 @@ const EditableEmail = ({ subject, setSubject, body, setBody, studentFirstNamePre
             {activeTab === 'editor' && (
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm text-gray-400 mb-1 font-semibold">Email Subject</label>
+                        <label className="block text-sm text-muted-foreground mb-1 font-semibold">Email Subject</label>
                         <input 
                             type="text"
                             value={subject}
                             onChange={(e) => setSubject(e.target.value)}
-                            className="w-full bg-[#1a1a1a] border border-gray-600 rounded-md p-2 text-white"
+                            className="w-full bg-input border border-border rounded-md p-2 text-foreground"
                             placeholder="Enter email subject..."
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm text-gray-400 mb-2 font-semibold">Email Body</label>
+                        <label className="block text-sm text-muted-foreground mb-2 font-semibold">Email Body</label>
                         
                         {/* Formatting Toolbar */}
-                        <div className="bg-[#1a1a1a] border border-gray-600 rounded-t-md p-2 flex items-center gap-1 flex-wrap">
+                        <div className="bg-input border border-border rounded-t-md p-2 flex items-center gap-1 flex-wrap">
                             {/* Text Formatting */}
                             <button
                                 type="button"
                                 onClick={() => applyFormat('bold')}
-                                className="p-2 hover:bg-gray-700 rounded text-gray-300"
+                                className="p-2 hover:bg-accent rounded text-muted-foreground"
                                 title="Bold"
                             >
                                 <Bold size={16} />
@@ -180,7 +180,7 @@ const EditableEmail = ({ subject, setSubject, body, setBody, studentFirstNamePre
                             <button
                                 type="button"
                                 onClick={() => applyFormat('italic')}
-                                className="p-2 hover:bg-gray-700 rounded text-gray-300"
+                                className="p-2 hover:bg-accent rounded text-muted-foreground"
                                 title="Italic"
                             >
                                 <Italic size={16} />
@@ -188,18 +188,18 @@ const EditableEmail = ({ subject, setSubject, body, setBody, studentFirstNamePre
                             <button
                                 type="button"
                                 onClick={() => applyFormat('underline')}
-                                className="p-2 hover:bg-gray-700 rounded text-gray-300"
+                                className="p-2 hover:bg-accent rounded text-muted-foreground"
                                 title="Underline"
                             >
                                 <Underline size={16} />
                             </button>
                             
-                            <div className="w-px h-6 bg-gray-600 mx-1"></div>
+                            <div className="w-px h-6 bg-border mx-1"></div>
                             
                             {/* Font Size */}
                             <select
                                 onChange={(e) => applyFormat('fontSize', e.target.value)}
-                                className="bg-[#2a2a2a] text-gray-300 text-xs px-2 py-1 rounded border border-gray-600 hover:bg-gray-700"
+                                className="bg-input text-muted-foreground text-xs px-2 py-1 rounded border border-border hover:bg-accent"
                                 defaultValue=""
                             >
                                 <option value="" disabled>Font Size</option>
@@ -213,7 +213,7 @@ const EditableEmail = ({ subject, setSubject, body, setBody, studentFirstNamePre
                             <input
                                 type="color"
                                 onChange={(e) => applyFormat('foreColor', e.target.value)}
-                                className="w-8 h-8 rounded border border-gray-600 cursor-pointer"
+                                className="w-8 h-8 rounded border border-border cursor-pointer"
                                 title="Text Color"
                             />
                             
@@ -221,17 +221,17 @@ const EditableEmail = ({ subject, setSubject, body, setBody, studentFirstNamePre
                             <input
                                 type="color"
                                 onChange={(e) => applyFormat('backColor', e.target.value)}
-                                className="w-8 h-8 rounded border border-gray-600 cursor-pointer"
+                                className="w-8 h-8 rounded border border-border cursor-pointer"
                                 title="Highlight"
                             />
                             
-                            <div className="w-px h-6 bg-gray-600 mx-1"></div>
+                            <div className="w-px h-6 bg-border mx-1"></div>
                             
                             {/* Alignment */}
                             <button
                                 type="button"
                                 onClick={() => applyFormat('justifyLeft')}
-                                className="p-2 hover:bg-gray-700 rounded text-gray-300"
+                                className="p-2 hover:bg-accent rounded text-muted-foreground"
                                 title="Align Left"
                             >
                                 <AlignLeft size={16} />
@@ -239,7 +239,7 @@ const EditableEmail = ({ subject, setSubject, body, setBody, studentFirstNamePre
                             <button
                                 type="button"
                                 onClick={() => applyFormat('justifyCenter')}
-                                className="p-2 hover:bg-gray-700 rounded text-gray-300"
+                                className="p-2 hover:bg-accent rounded text-muted-foreground"
                                 title="Align Center"
                             >
                                 <AlignCenter size={16} />
@@ -247,19 +247,19 @@ const EditableEmail = ({ subject, setSubject, body, setBody, studentFirstNamePre
                             <button
                                 type="button"
                                 onClick={() => applyFormat('justifyRight')}
-                                className="p-2 hover:bg-gray-700 rounded text-gray-300"
+                                className="p-2 hover:bg-accent rounded text-muted-foreground"
                                 title="Align Right"
                             >
                                 <AlignRight size={16} />
                             </button>
                             
-                            <div className="w-px h-6 bg-gray-600 mx-1"></div>
+                            <div className="w-px h-6 bg-border mx-1"></div>
                             
                             {/* Lists */}
                             <button
                                 type="button"
                                 onClick={() => applyFormat('insertUnorderedList')}
-                                className="p-2 hover:bg-gray-700 rounded text-gray-300"
+                                className="p-2 hover:bg-accent rounded text-muted-foreground"
                                 title="Bullet List"
                             >
                                 <List size={16} />
@@ -267,19 +267,19 @@ const EditableEmail = ({ subject, setSubject, body, setBody, studentFirstNamePre
                             <button
                                 type="button"
                                 onClick={() => applyFormat('insertOrderedList')}
-                                className="p-2 hover:bg-gray-700 rounded text-gray-300"
+                                className="p-2 hover:bg-accent rounded text-muted-foreground"
                                 title="Numbered List"
                             >
                                 <ListOrdered size={16} />
                             </button>
                             
-                            <div className="w-px h-6 bg-gray-600 mx-1"></div>
+                            <div className="w-px h-6 bg-border mx-1"></div>
                             
                             {/* Heading and Link */}
                             <button
                                 type="button"
                                 onClick={() => applyFormat('formatBlock', 'h2')}
-                                className="px-2 py-1 hover:bg-gray-700 rounded text-gray-300 text-sm"
+                                className="px-2 py-1 hover:bg-accent rounded text-muted-foreground text-sm"
                                 title="Heading"
                             >
                                 <Type size={16} />
@@ -290,7 +290,7 @@ const EditableEmail = ({ subject, setSubject, body, setBody, studentFirstNamePre
                                     const url = prompt('Enter URL:');
                                     if (url) applyFormat('createLink', url);
                                 }}
-                                className="p-2 hover:bg-gray-700 rounded text-gray-300"
+                                className="p-2 hover:bg-accent rounded text-muted-foreground"
                                 title="Add Link"
                             >
                                 <Link2 size={16} />
@@ -298,8 +298,8 @@ const EditableEmail = ({ subject, setSubject, body, setBody, studentFirstNamePre
                         </div>
 
                         {/* Dynamic Tags */}
-                        <div className="bg-[#1a1a1a] border-x border-gray-600 p-2 flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-gray-500">Insert:</span>
+                        <div className="bg-input border-x border-border p-2 flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-muted-foreground">Insert:</span>
                             {tags.map(tag => (
                                 <button
                                     key={tag.name}
@@ -318,11 +318,11 @@ const EditableEmail = ({ subject, setSubject, body, setBody, studentFirstNamePre
                             ref={editorRef}
                             contentEditable
                             onInput={handleEditorInput}
-                            className="w-full bg-white text-black border border-gray-600 rounded-b-md p-4 h-96 overflow-y-auto focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full bg-white text-black border border-border rounded-b-md p-4 h-96 overflow-y-auto focus:outline-none focus:ring-2 focus:ring-ring"
                             style={{ minHeight: '300px' }}
                         />
                         
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="text-xs text-muted-foreground mt-2">
                             💡 Tip: Use the colored tags above to insert personalized fields. They'll be automatically replaced with each student's information.
                         </p>
                     </div>
@@ -331,9 +331,9 @@ const EditableEmail = ({ subject, setSubject, body, setBody, studentFirstNamePre
 
             {activeTab === 'preview' && (
                 <div className="space-y-3">
-                    <div className="bg-[#1a1a1a] rounded-md p-3">
-                        <span className="text-sm text-gray-400 font-semibold">Subject: </span>
-                        <span className="text-sm text-white">
+                    <div className="bg-input rounded-md p-3">
+                        <span className="text-sm text-muted-foreground font-semibold">Subject: </span>
+                        <span className="text-sm text-foreground">
                             {subject.replace(/{{studentFirstName}}/g, studentFirstNamePreview).replace(/{{schoolName}}/g, '[Your School Name]')}
                         </span>
                     </div>
@@ -341,7 +341,7 @@ const EditableEmail = ({ subject, setSubject, body, setBody, studentFirstNamePre
                         className="bg-white text-black rounded-md p-6 h-96 overflow-y-auto shadow-lg"
                         dangerouslySetInnerHTML={{ __html: getPreviewHtml() }}
                     />
-                    <p className="text-xs text-gray-400 italic">
+                    <p className="text-xs text-muted-foreground italic">
                         This is how your email will look when sent to students.
                     </p>
                 </div>

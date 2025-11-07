@@ -54,27 +54,27 @@ const InviteStudentModal = ({ isOpen, onClose, onSuccess }) => {
              <form onSubmit={handleSubmit} className="max-h-[70vh] space-y-6 y-auto overflow-y-auto pr-2">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm text-gray-400 mb-1">First Name</label>
-                        <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} className="w-full bg-[#222] border border-gray-700 rounded-md p-2" required />
+                        <label className="block text-sm text-muted-foreground mb-1">First Name</label>
+                        <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} className="w-full bg-input border border-border rounded-md p-2" required />
                     </div>
                     <div>
-                        <label className="block text-sm text-gray-400 mb-1">Last Name</label>
-                        <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} className="w-full bg-[#222] border border-gray-700 rounded-md p-2" required />
+                        <label className="block text-sm text-muted-foreground mb-1">Last Name</label>
+                        <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} className="w-full bg-input border border-border rounded-md p-2" required />
                     </div>
                 </div>
                 {/* --- THIS IS THE FIX: Converted to a two-column layout and removed phoneNumber --- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm text-gray-400 mb-1">Email</label>
-                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full bg-[#222] border border-gray-700 rounded-md p-2" required />
+                        <label className="block text-sm text-muted-foreground mb-1">Email</label>
+                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full bg-input border border-border rounded-md p-2" required />
                     </div>
                     <div>
-                        <label className="block text-sm text-gray-400 mb-1">Grade / Year Group</label>
+                        <label className="block text-sm text-muted-foreground mb-1">Grade / Year Group</label>
                         <select 
                             name="yearGroup" 
                             value={formData.yearGroup} 
                             onChange={handleInputChange} 
-                            className="w-full bg-[#222] border border-gray-700 rounded-md p-2 appearance-none" 
+                            className="w-full bg-input border border-border rounded-md p-2 appearance-none" 
                             required
                         >
                             <option value="">Select Year...</option>

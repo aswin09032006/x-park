@@ -11,42 +11,20 @@ const GameProgressSchema = new Schema({
     certificates: { type: Map, of: Boolean, default: {} }
 }, { _id: false });
 
-
 const UserSchema = new Schema({
     username: { type: String, unique: true, sparse: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, select: false },
-    role: {
-        type: String,
-        enum: ['student', 'schooladmin', 'superadmin'],
-        default: 'student',
-    },
-    school: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'School',
-        required: false
-    },
-    isApproved: {
-        type: Boolean,
-        default: function() { return this.role !== 'student' || !this.school; } 
-    },
+    role: { type: String, enum: ['student', 'schooladmin', 'superadmin'], default: 'student' },
+    school: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: false },
+    isApproved: { type: Boolean, default: function() { return this.role !== 'student' || !this.school; } },
     isVerified: { type: Boolean, default: false },
     firstName: { type: String, default: '' },
     lastName: { type: String, default: '' },
-    
-    avatar: {
-        style: {
-            type: String,
-            enum: ['initials', 'placeholder'],
-            default: 'initials'
-        }
-    },
-
+    avatar: { style: { type: String, enum: ['initials', 'placeholder'], default: 'initials' } },
     displayName: { type: String, default: '' },
     city: { type: String, default: '' },
-    county: { 
-            type: String,
-        },    
+    county: { type: String },
     studentId: { type: String, default: '' },
     yearGroup: { type: Number, default: 0 },
     landingPagePreference: { type: String, default: 'Dashboard' },
@@ -55,20 +33,9 @@ const UserSchema = new Schema({
     verificationCodeExpires: Date,
     passwordResetToken: String,
     passwordResetExpires: Date,
-    savedGames: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Game'
-    }],
-    playedGames: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Game'
-    }],
-    gameData: {
-        type: Map,
-        of: GameProgressSchema,
-        default: {}
-    },
-
+    savedGames: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Game' }],
+    playedGames: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Game' }],
+    gameData: { type: Map, of: GameProgressSchema, default: {} },
     date: { type: Date, default: Date.now }
 }, { timestamps: true });
 
