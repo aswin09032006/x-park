@@ -48,18 +48,21 @@ const ProfilePage = () => {
       });
       setSelectedAvatarStyle(user.avatar?.style || 'initials');
 
-      const fetchGameData = async () => {
-        try {
-          const data = await api('/users/me/gamedata');
-          setGameData(data);
-        } catch (err) {
-          logger.error('Failed to fetch game data for profile.', {
-            context: 'ProfilePage',
-            details: { error: err.message },
-          });
-        }
-      };
-      fetchGameData();
+      // --- THIS IS THE FIX: Only fetch game data for students ---
+      if (user.role === 'student') {
+        const fetchGameData = async () => {
+          try {
+            const data = await api('/users/me/gamedata');
+            setGameData(data);
+          } catch (err) {
+            logger.error('Failed to fetch game data for profile.', {
+              context: 'ProfilePage',
+              details: { error: err.message },
+            });
+          }
+        };
+        fetchGameData();
+      }
     }
   }, [user, isEditing]);
 
@@ -219,27 +222,33 @@ const ProfilePage = () => {
               <EditField label="Display Name" name="displayName" value={formData.displayName} onChange={handleInputChange} />
               <EditField label="City" name="city" value={formData.city} onChange={handleInputChange} />
               <EditField label="County" name="county" value={formData.county} onChange={handleInputChange} />
-              <InfoField label="School" value={user.school?.name} />
-              <EditField label="Student ID" name="studentId" value={formData.studentId} onChange={handleInputChange} />
-              <div className="mb-6">
-                <label htmlFor="yearGroup" className="block text-sm text-muted-foreground mb-2">
-                  Year group
-                </label>
-                <select
-                  id="yearGroup"
-                  name="yearGroup"
-                  value={formData.yearGroup}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring appearance-none"
-                >
-                  <option value="">Select Year...</option>
-                  {Array.from({ length: 7 }, (_, i) => i + 7).map((year) => (
-                    <option key={year} value={year}>
-                      Year {year}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {user.school && <InfoField label="School" value={user.school?.name} />}
+              
+              {/* --- THIS IS THE FIX: Only show these fields for students --- */}
+              {user.role === 'student' && (
+                <>
+                  <EditField label="Student ID" name="studentId" value={formData.studentId} onChange={handleInputChange} />
+                  <div className="mb-6">
+                    <label htmlFor="yearGroup" className="block text-sm text-muted-foreground mb-2">
+                      Year group
+                    </label>
+                    <select
+                      id="yearGroup"
+                      name="yearGroup"
+                      value={formData.yearGroup}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring appearance-none"
+                    >
+                      <option value="">Select Year...</option>
+                      {Array.from({ length: 7 }, (_, i) => i + 7).map((year) => (
+                        <option key={year} value={year}>
+                          Year {year}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
             </div>
 
             {error && <p className="text-destructive text-sm text-center my-4">{error}</p>}
@@ -271,19 +280,28 @@ const ProfilePage = () => {
               <InfoField label="Email" value={user.email} canCopy />
               <InfoField label="City" value={user.city} />
               <InfoField label="County" value={user.county} />
-              <InfoField label="School" value={user.school?.name} />
-              <InfoField label="Student ID" value={user.studentId} canCopy />
-              <InfoField label="Year group" value={user.yearGroup} />
-            </div>
+              {user.school && <InfoField label="School" value={user.school?.name} />}
 
-            <div className="mt-12 pt-10 border-t border-border">
-              <h2 className="text-2xl font-bold mb-6">Achievements</h2>
-              {gameData ? (
-                <Achievements gameData={gameData} />
-              ) : (
-                <p className="text-muted-foreground">Loading achievements...</p>
+              {/* --- THIS IS THE FIX: Only show these fields for students --- */}
+              {user.role === 'student' && (
+                <>
+                  <InfoField label="Student ID" value={user.studentId} canCopy />
+                  <InfoField label="Year group" value={user.yearGroup} />
+                </>
               )}
             </div>
+
+            {/* --- THIS IS THE FIX: Only show Achievements for students --- */}
+            {user.role === 'student' && (
+              <div className="mt-12 pt-10 border-t border-border">
+                <h2 className="text-2xl font-bold mb-6">Achievements</h2>
+                {gameData ? (
+                  <Achievements gameData={gameData} />
+                ) : (
+                  <p className="text-muted-foreground">Loading achievements...</p>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>
