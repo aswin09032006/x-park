@@ -1,30 +1,35 @@
+// src/App.jsx
+
+import React, { Suspense, lazy } from 'react'; // --- THIS IS THE FIX: Import Suspense and lazy ---
 import { Route, Routes } from 'react-router-dom';
 import AdminRoute from './components/AdminRoute';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import SuperAdminRoute from './components/SuperAdminRoute';
 import { useAuth } from './context/AuthContext';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminGamesPage from './pages/AdminGamesPage';
-import CyberSecurityGame from './pages/CyberSecurityGame';
-import DashboardPage from './pages/Dashboard';
-import DataForgeGame from './pages/DataForgeGame';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import GameLibraryPage from './pages/GameLibraryPage';
-import InvitedRegisterPage from './pages/InvitedRegisterPage';
-import LoadingPage from './pages/LoadingPage';
-import LoginPage from './pages/LoginPage';
-import ManageAdmins from './pages/ManageAdmins';
-import ManageSchools from './pages/ManageSchools';
-import ManageUsers from './pages/ManageUsers';
-import MyGames from './pages/MyGames';
-import ProfilePage from './pages/ProfilePage';
-import RegisterPage from './pages/RegisterPage';
-import SuperAdminDashboard from './pages/SuperAdminDashboard';
-import SupportPage from './pages/SupportPage';
-import UpdatePasswordPage from './pages/UpdatePasswordPage';
-// --- NEW: Import the new page component ---
-import GamesProgressPage from './pages/GamesProgressPage';
+import LoadingPage from './pages/LoadingPage'; // Keep for main auth loading
+import Loader from './pages/LoadingPage'; // A loader for Suspense fallback
+
+// --- THIS IS THE FIX: Lazy load page components ---
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const InvitedRegisterPage = lazy(() => import('./pages/InvitedRegisterPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const UpdatePasswordPage = lazy(() => import('./pages/UpdatePasswordPage'));
+const DashboardPage = lazy(() => import('./pages/Dashboard'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const GameLibraryPage = lazy(() => import('./pages/GameLibraryPage'));
+const SupportPage = lazy(() => import('./pages/SupportPage'));
+const MyGames = lazy(() => import('./pages/MyGames'));
+const CyberSecurityGame = lazy(() => import('./pages/CyberSecurityGame'));
+const DataForgeGame = lazy(() => import('./pages/DataForgeGame'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const ManageUsers = lazy(() => import('./pages/ManageUsers'));
+const AdminGamesPage = lazy(() => import('./pages/AdminGamesPage'));
+const GamesProgressPage = lazy(() => import('./pages/GamesProgressPage'));
+const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'));
+const ManageSchools = lazy(() => import('./pages/ManageSchools'));
+const ManageAdmins = lazy(() => import('./pages/ManageAdmins'));
 
 const MainLayout = ({ children }) => (
     <div className="bg-[#111] min-h-screen"><Navbar /><main className="pt-20">{children}</main></div>
@@ -41,6 +46,8 @@ function App() {
   }
 
   return (
+    // --- THIS IS THE FIX: Wrap Routes with Suspense to handle lazy loading ---
+    <Suspense fallback={<Loader />}>
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -60,7 +67,6 @@ function App() {
         <Route path="/admin/dashboard" element={<AdminRoute><MainLayout><AdminDashboard /></MainLayout></AdminRoute>} />
         <Route path="/admin/manage-users" element={<AdminRoute><MainLayout><ManageUsers /></MainLayout></AdminRoute>} />
         <Route path="/admin/games" element={<AdminRoute><MainLayout><AdminGamesPage /></MainLayout></AdminRoute>} />
-        {/* --- NEW: Add the route for the games progress page --- */}
         <Route path="/admin/games-progress" element={<AdminRoute><MainLayout><GamesProgressPage /></MainLayout></AdminRoute>} />
 
         <Route path="/superadmin/dashboard" element={<SuperAdminRoute><MainLayout><SuperAdminDashboard /></MainLayout></SuperAdminRoute>} />
@@ -69,6 +75,7 @@ function App() {
         
         <Route path="*" element={<h1 className="text-white text-center mt-20">404: Page Not Found</h1>} />
       </Routes>
+    </Suspense>
   );
 }
 

@@ -1,10 +1,10 @@
 // =================================================================================================
 // START OF FILE: DataForgeGame.jsx
-// --- This is the final version. It corrects the "new player" initial state. ---
+// --- This is the final version. It hides BOTH types of default Unity footers. ---
 // =================================================================================================
 
-import { Loader2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Loader2, Maximize, Minimize } from 'lucide-react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { api } from '../services/api';
 
 const GAME_ID = "DataForge";
@@ -13,13 +13,10 @@ const NUM_LEVELS = 5;
 const LOCAL_STORAGE_KEY = 'gameData';
 
 // --- LEVEL STATUS LOGIC ---
-// This function correctly determines the status of each level based on saved progress.
 const getStatusString = (level, completedLevels) => {
-    // This is the correct logic for a returning player.
     if (completedLevels && completedLevels[String(level)]) {
         return "completed";
     }
-    // Unity's own logic will handle unlocking the next level, so we only need to mark the rest as locked.
     return "locked";
 };
 
@@ -30,8 +27,10 @@ const DataForgeGame = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [loadingMessage, setLoadingMessage] = useState('Initializing...');
+    
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const containerRef = useRef(null);
 
-    // --- (The rest of the component remains unchanged as it is now working correctly) ---
     const progressDataCollector = useRef({});
     const collectionTimer = useRef(null);
     const saveState = useRef('IDLE');
@@ -46,11 +45,34 @@ const DataForgeGame = () => {
         try {
             await api(`/users/me/gamedata/data-forge`, 'POST', finalPayload);
             log('<<< BACKEND SAVE SUCCESSFUL <<<');
-            // log('[STATE SYNC] Reloading page to apply new level progress.');
-            // setTimeout(() => window.location.reload(), 500);
         } catch (err) {
             errLog('!!! BACKEND SAVE FAILED !!! API call returned an error.', err);
             setError("A network error occurred while saving your progress.");
+        }
+    };
+    
+    const handleFullscreenChange = useCallback(() => {
+        setIsFullscreen(!!document.fullscreenElement);
+    }, []);
+
+    useEffect(() => {
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => {
+            document.removeEventListener('fullscreenchange', handleFullscreenChange);
+        };
+    }, [handleFullscreenChange]);
+
+    const toggleFullscreen = () => {
+        if (!containerRef.current) return;
+
+        if (!isFullscreen) {
+            containerRef.current.requestFullscreen().catch(err => {
+                console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+            });
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
         }
     };
 
@@ -129,11 +151,8 @@ const DataForgeGame = () => {
                 const high_score = [];
                 const isNewPlayer = !userGameData.completedLevels || Object.keys(userGameData.completedLevels).length === 0;
 
-                // --- THE FINAL CRITICAL FIX ---
                 if (isNewPlayer) {
                     log("[INIT] New player detected. Sending completely empty 'stages_completed' array to rely on Unity's internal default state.");
-                    // By doing nothing here, 'stages_completed' remains an empty array.
-                    // This prevents us from sending the 'unlocked' status that breaks Unity's logic.
                 } else {
                     log('[INIT] Returning player. Building level status from saved data.');
                     for (let i = 1; i <= NUM_LEVELS; i++) {
@@ -194,16 +213,34 @@ const DataForgeGame = () => {
 
     return (
         <div className="w-full h-full flex flex-col justify-center items-center p-4 bg-background relative">
+            {/* --- THIS IS THE FIX: Hides BOTH types of default Unity footers --- */}
+            <style>
+                {`
+                    #unity-footer, .footer {
+                        display: none !important;
+                    }
+                `}
+            </style>
+
             <a href="/dashboard" className="absolute top-4 left-4 z-50 text-white font-light py-2 px-4 rounded-md transition hover:bg-white/10">
                 &larr; Back to Dashboard
             </a>
-            <div className="relative w-[960px] h-[600px] bg-black rounded-lg shadow-2xl">
+            <div ref={containerRef} className="relative w-[960px] h-[600px] bg-black rounded-lg shadow-2xl">
                 {isLoading && (
                     <div className="absolute inset-0 flex flex-col justify-center items-center text-white">
                         <Loader2 className="animate-spin h-12 w-12 mb-4" />
                         <p>{loadingMessage}</p>
                         {error && <p className="text-red-500 mt-2">{error}</p>}
                     </div>
+                )}
+                {!isLoading && (
+                    <button
+                        onClick={toggleFullscreen}
+                        className="absolute top-4 right-4 z-50 text-white p-2 rounded-full transition hover:bg-white/10"
+                        title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+                    >
+                        {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+                    </button>
                 )}
                 <canvas 
                     ref={canvasRef} 
