@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    /* Light Theme */
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
@@ -25,32 +26,34 @@
     --ring: 262.1 83.3% 57.8%;
     --radius: 0.5rem;
   }
- 
+
   .dark {
-    --background: 240 10% 3.9%;
+    /* Dark Theme - Improved version */
+    --background: 240 6% 9%;
     --foreground: 210 20% 98%;
-    --card: 240 10% 3.9%;
+    --card: 240 5% 14%;
     --card-foreground: 210 20% 98%;
-    --popover: 240 10% 3.9%;
+    --popover: 240 5% 14%;
     --popover-foreground: 210 20% 98%;
     --primary: 263.4 90.2% 51.2%;
     --primary-foreground: 210 20% 98%;
-    --secondary: 240 3.7% 15.9%;
+    --secondary: 240 4% 12%;
     --secondary-foreground: 210 20% 98%;
-    --muted: 240 3.7% 15.9%;
+    --muted: 240 4% 12%;
     --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
+    --accent: 240 4% 18%;
     --accent-foreground: 210 20% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 210 20% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
+    --border: 240 4% 18%;
+    --input: 240 4% 12%;
     --ring: 263.4 90.2% 51.2%;
+    --radius: 0.75rem; /* rounder corners */
   }
 
-  /* --- ADD THIS RULE --- */
+  /* Font size */
   html {
-    font-size:20px; /* You can adjust this value. The default is 16px. */
+    font-size: 20px; /* default is 16px */
   }
 }
 

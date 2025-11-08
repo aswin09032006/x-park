@@ -4,11 +4,13 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Import assets
 import logo from '/XPLogo.png';
-import image1 from '/XparkBackdrop4.jpg';
-import image2 from '/VR.png';
-import image3 from '/Keyboard.png';
 
-const carouselImages = [image1, image2, image3];
+// --- THIS IS THE FIX: Reference images from the /public folder directly ---
+const carouselImages = [
+  '/XparkBackdrop4.jpg',
+  '/VR.png',
+  '/Keyboard.png'
+];
 
 const AuthCarouselLayout = ({ children }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
