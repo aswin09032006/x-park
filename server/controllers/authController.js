@@ -23,7 +23,6 @@ exports.verifyInviteToken = async (req, res) => {
             return res.status(400).json({ msg: 'Invitation link is invalid or has expired.' });
         }
 
-        // --- THIS IS THE FIX: Removed phoneNumber ---
         res.json({ 
             email: preReg.email, 
             firstName: preReg.firstName,
@@ -38,8 +37,8 @@ exports.verifyInviteToken = async (req, res) => {
 };
 
 exports.completeInvitedRegistration = async (req, res) => {
-    // --- THIS IS THE FIX: Removed phoneNumber ---
-    const { password } = req.body;
+    // --- UPDATED: Separated nickname from displayName ---
+    const { password, nickname } = req.body;
     try {
         const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
         const preReg = await PreRegisteredStudent.findOne({
@@ -52,6 +51,7 @@ exports.completeInvitedRegistration = async (req, res) => {
         }
 
         const finalUsername = preReg.username;
+        const displayNameForAdmin = `${preReg.firstName} ${preReg.lastName}`.trim();
 
         await User.create({
             email: preReg.email,
@@ -59,6 +59,8 @@ exports.completeInvitedRegistration = async (req, res) => {
             firstName: preReg.firstName,
             lastName: preReg.lastName,
             username: finalUsername,
+            displayName: displayNameForAdmin, // Set from real name for admin view
+            nickname: nickname,             // Set from optional form field for student view
             yearGroup: preReg.yearGroup,
             password: password,
             isVerified: true,
@@ -161,12 +163,59 @@ exports.forgotPassword = async (req, res) => {
             const token = user.getResetPasswordToken(); 
             await user.save({ validateBeforeSave: false });
 
-
             const resetUrl = `${process.env.FRONTEND_URL_EMAIL}/reset-password/${token}`;
+            
+            // --- UPDATED: Use a rich HTML email template ---
+            const emailBody = `
+            <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+                <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <div style="background-color: #1a1a1a; text-align: center;">
+                        <img src="https://res.cloudinary.com/dcjyydmzs/image/upload/v1762106928/WhatsApp_Image_2025-11-02_at_23.25.36_ff066a38_hvxjnb.jpg" alt="XPARK Banner" style="max-width: 100%; height: auto; display: block;" />
+                    </div>
+                    <div style="padding: 40px 30px;">
+                        <h2 style="color: #2c3e50; margin: 0 0 20px 0; font-size: 24px;">Password Reset Request</h2>
+                        <p style="color: #333; line-height: 1.6; margin: 0 0 16px 0; font-size: 16px;">
+                            Hello ${user.firstName || user.username},
+                        </p>
+                        <p style="color: #333; line-height: 1.6; margin: 0 0 16px 0; font-size: 16px;">
+                            We received a request to reset the password for your XPARK account. If you did not make this request, you can safely ignore this email.
+                        </p>
+                        <p style="color: #333; line-height: 1.6; margin: 0 0 24px 0; font-size: 16px;">
+                            To reset your password, please click the button below:
+                        </p>
+                        <div style="text-align: center; margin: 0 0 24px 0;">
+                            <a href="${resetUrl}" style="display: inline-block; background-color: #007bff; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Reset Your Password</a>
+                        </div>
+                        <div style="background-color: #f8f9fa; border-radius: 6px; padding: 16px; margin: 0 0 16px 0;">
+                            <p style="margin: 0 0 8px 0; font-size: 13px; color: #666;">
+                                If the button above doesn't work, copy and paste this link into your web browser:
+                            </p>
+                            <p style="margin: 0; font-size: 13px; word-break: break-all;">
+                                <a href="${resetUrl}" style="color: #007bff; text-decoration: underline;">${resetUrl}</a>
+                            </p>
+                        </div>
+                        <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 0 0 24px 0;">
+                            <p style="margin: 0; font-size: 14px; color: #856404;">
+                                <strong>Important:</strong> This password reset link will expire in 10 minutes.
+                            </p>
+                        </div>
+                        <p style="color: #333; line-height: 1.6; margin: 0; font-size: 16px;">
+                            Best regards,<br>
+                            <strong>The XPARK Games Team</strong>
+                        </p>
+                    </div>
+                    <div style="background-color: #f8f9fa; padding: 20px 30px; border-top: 1px solid #e9ecef;">
+                        <p style="margin: 0; font-size: 12px; color: #6c757d; text-align: center; line-height: 1.5;">
+                            This email was sent by XPARK Games.
+                        </p>
+                    </div>
+                </div>
+            </div>`;
+
             await sendEmail({ 
                 to: user.email, 
-                subject: 'Password Reset', 
-                text: `Reset here: ${resetUrl}` 
+                subject: 'Your XPARK Password Reset Link', 
+                html: emailBody 
             });
         }
         res.status(200).json({ msg: 'If a user with that email exists, a reset link has been sent.' });

@@ -13,6 +13,7 @@ const InvitedRegisterPage = () => {
     const [studentData, setStudentData] = useState(null);
     const [password, setPassword] = useState('');
     const [rePassword, setRePassword] = useState('');
+    const [nickname, setNickname] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -48,7 +49,7 @@ const InvitedRegisterPage = () => {
         logger.info('Completing invited registration.', { context });
 
         try {
-            const payload = { password };
+            const payload = { password, nickname };
             const response = await publicApi(`/auth/complete-invite/${token}`, 'POST', payload);
             logger.success('Invited registration completed successfully.', { context });
             alert(response.msg);
@@ -80,6 +81,10 @@ const InvitedRegisterPage = () => {
                         Please complete your registration below to activate your account.
                     </p>
                     <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm text-muted-foreground mb-2" htmlFor="nickname">Nickname</label>
+                            <input id="nickname" type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="w-full px-4 py-3 bg-input border border-border rounded-md" />
+                        </div>
                         <div>
                             <label className="block text-sm text-muted-foreground mb-2" htmlFor="password">Password</label>
                             <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full px-4 py-3 bg-input border border-border rounded-md" />

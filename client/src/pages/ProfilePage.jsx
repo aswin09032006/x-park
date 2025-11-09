@@ -40,7 +40,7 @@ const ProfilePage = () => {
       setFormData({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
-        displayName: user.displayName || '',
+        nickname: user.nickname || '',
         city: user.city || '',
         county: user.county || '',
         studentId: user.studentId || '',
@@ -48,7 +48,6 @@ const ProfilePage = () => {
       });
       setSelectedAvatarStyle(user.avatar?.style || 'initials');
 
-      // --- THIS IS THE FIX: Only fetch game data for students ---
       if (user.role === 'student') {
         const fetchGameData = async () => {
           try {
@@ -219,12 +218,11 @@ const ProfilePage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12">
               <EditField label="First Name" name="firstName" value={formData.firstName} onChange={handleInputChange} />
               <EditField label="Last Name" name="lastName" value={formData.lastName} onChange={handleInputChange} />
-              <EditField label="Display Name" name="displayName" value={formData.displayName} onChange={handleInputChange} />
+              <EditField label="Nickname" name="nickname" value={formData.nickname} onChange={handleInputChange} placeholder="Your public display name"/>
               <EditField label="City" name="city" value={formData.city} onChange={handleInputChange} />
               <EditField label="County" name="county" value={formData.county} onChange={handleInputChange} />
               {user.school && <InfoField label="School" value={user.school?.name} />}
               
-              {/* --- THIS IS THE FIX: Only show these fields for students --- */}
               {user.role === 'student' && (
                 <>
                   <EditField label="Student ID" name="studentId" value={formData.studentId} onChange={handleInputChange} />
@@ -276,13 +274,13 @@ const ProfilePage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12">
               <InfoField label="First Name" value={user.firstName} />
               <InfoField label="Last Name" value={user.lastName} />
-              <InfoField label="Display Name" value={user.displayName || user.username} />
+              {/* --- THIS IS THE FIX: Removed Display Name, shows Nickname instead --- */}
+              <InfoField label="Nickname" value={user.nickname} />
               <InfoField label="Email" value={user.email} canCopy />
               <InfoField label="City" value={user.city} />
               <InfoField label="County" value={user.county} />
               {user.school && <InfoField label="School" value={user.school?.name} />}
 
-              {/* --- THIS IS THE FIX: Only show these fields for students --- */}
               {user.role === 'student' && (
                 <>
                   <InfoField label="Student ID" value={user.studentId} canCopy />
@@ -291,7 +289,6 @@ const ProfilePage = () => {
               )}
             </div>
 
-            {/* --- THIS IS THE FIX: Only show Achievements for students --- */}
             {user.role === 'student' && (
               <div className="mt-12 pt-10 border-t border-border">
                 <h2 className="text-2xl font-bold mb-6">Achievements</h2>

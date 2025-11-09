@@ -13,6 +13,9 @@ const UserSidebar = () => {
             </aside>
         );
     }
+
+    console.log("User object from AuthContext:", user);
+    console.log("Is nickname coming? user.nickname:", user.nickname);
     
     const infoLinks = [
         { icon: Video, text: "Videos", count: 0, iconColor: "text-pink-500" },
@@ -30,11 +33,15 @@ const UserSidebar = () => {
         </a>
     );
 
+    // --- THIS IS THE FIX: Construct full name as a fallback ---
+    const userFullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+
     return (
         <aside className="w-80 flex-shrink-0 bg-card text-card-foreground p-6 rounded-lg self-start">
             <div className="flex flex-col items-center text-center">
                 <img src={getAvatarUrl(user)} alt="User Avatar" className="w-24 h-24 rounded-full object-cover mb-4" />
-                <h2 className="text-xl font-bold">{user.displayName || user.username}</h2>
+                {/* --- THIS IS THE FIX: Prioritize nickname, use full name as fallback, remove displayName --- */}
+                <h2 className="text-xl font-bold">{user.nickname || userFullName || user.username}</h2>
                 <p className="text-muted-foreground text-sm">{user.email}</p>
                 <p className="text-muted-foreground text-sm mt-1">{user.yearGroup ? `Year Group: ${user.yearGroup}` : 'Year Group: Not Set'}</p>
                 <p className="text-muted-foreground text-sm">{user.school?.name || 'School: Not Set'}</p>

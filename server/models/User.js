@@ -21,6 +21,8 @@ const UserSchema = new Schema({
     isVerified: { type: Boolean, default: false },
     firstName: { type: String, default: '' },
     lastName: { type: String, default: '' },
+    // --- UPDATED: Added nickname field ---
+    nickname: { type: String, default: '' },
     avatar: { style: { type: String, enum: ['initials', 'placeholder'], default: 'initials' } },
     displayName: { type: String, default: '' },
     city: { type: String, default: '' },

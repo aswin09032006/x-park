@@ -24,7 +24,8 @@ const resetPasswordRules = () => [ body('password').isLength({ min: 6 }) ];
 const updateUserRules = () => [
     body('firstName').optional({ checkFalsy: true }).isString().trim().isLength({ min: 1, max: 100 }).withMessage('First name must be between 1 and 100 characters.'),
     body('lastName').optional({ checkFalsy: true }).isString().trim().isLength({ min: 1, max: 100 }).withMessage('Last name must be between 1 and 100 characters.'),
-    body('displayName').optional({ checkFalsy: true }).isString().trim().isLength({ min: 1, max: 50 }).withMessage('Display name must be between 1 and 50 characters.'),
+    // --- UPDATED: Added nickname validation ---
+    body('nickname').optional({ checkFalsy: true }).isString().trim().isLength({ min: 1, max: 50 }).withMessage('Nickname must be between 1 and 50 characters.'),
     body('city').optional({ checkFalsy: true }).isString().trim().isLength({ max: 100 }).withMessage('City cannot exceed 100 characters.'),
     body('county').optional({ checkFalsy: true }).isString().trim().isLength({ max: 100 }).withMessage('County cannot exceed 100 characters.'),
     body('studentId').optional({ checkFalsy: true }).isString().trim().isLength({ max: 50 }).withMessage('Student ID cannot exceed 50 characters.'),
