@@ -17,8 +17,8 @@ exports.getMe = async (req, res) => {
 exports.updateMe = async (req, res) => {
     const context = 'userController.updateMe';
     const { correlation_id } = req;
-    const { firstName, lastName, displayName, city, county, studentId, yearGroup, landingPagePreference } = req.body;
-    // Removed 'school' from destructuring above
+    // --- UPDATED: Added 'nickname', removed 'displayName' ---
+    const { firstName, lastName, nickname, city, county, studentId, yearGroup, landingPagePreference } = req.body;
 
     try {
         const user = await User.findById(req.user.id);
@@ -27,11 +27,17 @@ exports.updateMe = async (req, res) => {
         const fieldsToUpdate = {};
         if (firstName !== undefined) fieldsToUpdate.firstName = firstName;
         if (lastName !== undefined) fieldsToUpdate.lastName = lastName;
-        if (displayName !== undefined) fieldsToUpdate.displayName = displayName;
+        
+        // --- UPDATED: Automatically update displayName if name changes ---
+        if (firstName !== undefined || lastName !== undefined) {
+            const newFirstName = firstName !== undefined ? firstName : user.firstName;
+            const newLastName = lastName !== undefined ? lastName : user.lastName;
+            fieldsToUpdate.displayName = `${newFirstName} ${newLastName}`.trim();
+        }
+
+        if (nickname !== undefined) fieldsToUpdate.nickname = nickname;
         if (city !== undefined) fieldsToUpdate.city = city;
         if (county !== undefined) fieldsToUpdate.county = county;
-        // Removed ability for users to modify school:
-        // if (school !== undefined) fieldsToUpdate.school = school;
         if (studentId !== undefined) fieldsToUpdate.studentId = studentId;
         if (yearGroup !== undefined) fieldsToUpdate.yearGroup = yearGroup;
         if (landingPagePreference !== undefined) fieldsToUpdate.landingPagePreference = landingPagePreference;
@@ -53,6 +59,7 @@ exports.updateMe = async (req, res) => {
         res.status(500).json({ msg: 'Server error' });
     }
 };
+
 
 exports.completeOnboarding = async (req, res) => {
     const context = 'userController.completeOnboarding';
