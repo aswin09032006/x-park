@@ -1,30 +1,26 @@
-// server.js (Production-Ready Version)
+// server.js (Pino Version - Final)
 
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
-const helmet = require('helmet'); // 1. CRITICAL FOR SECURITY
+const helmet = require('helmet');
 const { v4: uuidv4 } = require('uuid');
-const connectDB = require('./config/db');
-const { backendLogger } = require('./config/logger'); // Assuming this is your Winston logger instance
 
-// Load environment variables and connect to the database
+// Env vars are preloaded with -r dotenv/config
+const connectDB = require('./config/db');
+const { backendLogger } = require('./config/logger');
+
 dotenv.config();
+
+// Connect to the database
 connectDB();
 
 const app = express();
 
-// --- Middleware Chain (Correct Production Order) ---
-
-// 1. Set essential security headers with Helmet
+// --- Middleware Chain ---
 app.use(helmet());
-
-// 2. Configure Cross-Origin Resource Sharing (CORS)
-const allowedOrigins = process.env.FRONTEND_URL
-  ? process.env.FRONTEND_URL.split(",")
-  : ["http://localhost:5173"]; // Safe fallback for local dev if env is missing
-
+const allowedOrigins = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(",") : ["http://localhost:5173"];
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -36,19 +32,14 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   credentials: true
 }));
-
-// 3. Body parser for JSON payloads
 app.use(express.json());
-
-// 4. Custom Middleware: Generate a Correlation ID for each request
 app.use((req, res, next) => {
-    const correlation_id = req.headers['x-correlation-id'] || uuidv4();
-    req.correlation_id = correlation_id;
-    res.setHeader('X-Correlation-ID', correlation_id);
+    req.correlation_id = req.headers['x-correlation-id'] || uuidv4();
+    res.setHeader('X-Correlation-ID', req.correlation_id);
     next();
 });
 
-// 5. Custom Middleware: Log incoming requests and their responses
+// HTTP Request Logger Middleware using Pino
 app.use((req, res, next) => {
     const start = Date.now();
     res.on('finish', () => {
@@ -68,17 +59,16 @@ app.use((req, res, next) => {
         const message = `HTTP ${req.method} ${req.originalUrl} | ${res.statusCode} | ${duration}ms`;
 
         if (res.statusCode >= 500) {
-            backendLogger.error(message, logDetails);
+            backendLogger.error({ msg: message, ...logDetails });
         } else if (res.statusCode >= 400) {
-            backendLogger.warn(message, logDetails);
+            backendLogger.warn({ msg: message, ...logDetails });
         } else {
-            backendLogger.info(message, logDetails);
+            backendLogger.info({ msg: message, ...logDetails });
         }
     });
     next();
 });
 
-// 6. Serve static files from the 'public' directory (for game assets)
 app.use(express.static(path.join(__dirname, "public"), {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.br')) {
@@ -102,31 +92,46 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/schools', require('./routes/school'));
 app.use('/api/superadmin', require('./routes/superadmin'));
 app.use('/api/dashboard', require('./routes/dashboard'));
-app.use('/api/log', require('./routes/log')); // Assuming you have a log route
+// The /api/log route is now removed
 
-
-// --- Global Error Handler (MUST BE THE LAST MIDDLEWARE) ---
-// This acts as a safety net to catch any unhandled errors in your routes.
+// --- Global Error Handler ---
 app.use((err, req, res, next) => {
-    // Log the error for debugging purposes using your structured logger
-    backendLogger.error(`Unhandled Error: ${err.message}`, {
+    backendLogger.error({
+        msg: `Unhandled Error: ${err.message}`,
         context: 'ErrorHandler',
         correlation_id: req.correlation_id,
         stack: err.stack,
         url: req.originalUrl,
         method: req.method,
     });
-
-    // Send a generic, safe response to the client
-    res.status(500).json({ 
-        msg: 'An unexpected server error occurred. Our team has been notified.' 
-    });
+    res.status(500).json({ msg: 'An unexpected server error occurred. Our team has been notified.' });
 });
-
 
 // --- Server Startup ---
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    // Use the standard .info() level for consistency
-    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`, { context: 'ServerStartup' });
+const server = app.listen(PORT, () => {
+    backendLogger.info(`Server running in ${process.env.ENVIRONMENT} mode on port ${PORT}`, { context: 'ServerStartup' });
+});
+
+// --- Graceful Shutdown ---
+const shutdown = (signal) => {
+    backendLogger.warn(`Received ${signal}. Closing http server.`, { context: 'Shutdown' });
+    server.close(() => {
+        backendLogger.warn('Server closed. Pino will flush and exit.', { context: 'Shutdown' });
+        process.exit(0);
+    });
+};
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+process.on('uncaughtException', (err, origin) => {
+    backendLogger.fatal({
+        msg: `UNCAUGHT EXCEPTION! Origin: ${origin}. Shutting down...`,
+        context: 'UncaughtException',
+        stack: err.stack,
+        message: err.message
+    });
+    console.error('UNCAUGHT EXCEPTION! See logs for details. Shutting down...');
+    process.exit(1);
 });

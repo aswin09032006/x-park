@@ -110,7 +110,7 @@ const Dashboard = () => {
         {user?.isFirstLogin ? (
           <div className="mb-8 p-6 bg-card border border-border rounded-lg">
             <h1 className="text-3xl font-bold mb-3">
-              Welcome {user?.displayName || user?.username || 'Player'} to XPark career exploration platform!
+              Welcome {user?.nickname || user?.displayName || user?.username || 'Player'} to XPark career exploration platform!
             </h1>
             <p className="text-muted-foreground mb-4">Download our user manual to get started.</p>
             <a
@@ -124,7 +124,7 @@ const Dashboard = () => {
           </div>
         ) : (
           <h1 className="text-3xl font-bold mb-8">
-            Welcome back, {user?.displayName || user?.username || 'Player'}!
+            Welcome back, {user?.nickname || user?.displayName || user?.username || 'Player'}!
           </h1>
         )}
 

@@ -19,7 +19,7 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
             school: adminSchoolId,
             role: 'student',
             isApproved: true
-        }).select('username yearGroup gameData');
+        }).select('username yearGroup gameData displayName firstName lastName');
         const studentIds = students.map(s => s._id);
 
         const stats = {
@@ -74,7 +74,7 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
 
             stats.topPerformers.push({
                 _id: student._id,
-                name: student.username,
+                name: student.displayName || `${student.firstName} ${student.lastName}`.trim(),
                 yearGroup: student.yearGroup,
                 certificates: studentTotalCertificates,
                 badges: studentTotalBadges,
@@ -199,7 +199,6 @@ exports.getSchoolGameProgress = async (req, res) => {
             }
         }
 
-        // --- THIS IS THE FIX: Remove the incorrect calculation ---
         const results = Array.from(gameStatsMap.values());
 
         res.json(results);

@@ -22,33 +22,58 @@ const sendLog = (logData) => {
                 },
                 body: payload,
                 keepalive: true,
-            }).catch(err => console.error("Logger fetch fallback failed:", err));
+            }).catch(err => {
+                 // --- THIS IS THE FIX: More descriptive error for easier debugging ---
+                console.error(
+                    `[Logger Error] Failed to send log to the backend endpoint (${logEndpoint}). ` +
+                    `Please check: \n` +
+                    `1. Your VITE_API_URL in the .env file is correct. \n` +
+                    `2. The backend server is running and accessible. \n` +
+                    `3. There are no network or CORS issues. \n`,
+                    err
+                );
+            });
         }
     } catch (error) {
         console.error("Logger failed to send log to server:", error);
     }
 };
 
+// This function will log to the console only in development mode.
 const log = (level, message, context, details = {}) => {
-    const logData = {
-        level,
-        message,
-        context,
-        correlation_id: correlationId,
-        details,
-        timestamp: new Date().toISOString(),
-        url: window.location.href,
-    };
-    sendLog(logData);
+    // In production, this function does nothing.
+    if (import.meta.env.VITE_ENVIRONMENT !== 'development') {
+        return;
+    }
+
+    const style = 'font-weight: bold;';
+    const consoleMessage = `%c[${level.toUpperCase()}]%c [${context}] ${message}`;
+    // Use the inner 'details' object if it exists, otherwise use the whole object.
+    const detailsToLog = details.details || details;
+
+    switch (level) {
+        case 'success':
+            console.info(consoleMessage, `color: green; ${style}`, 'color: unset;', detailsToLog);
+            break;
+        case 'info':
+            console.info(consoleMessage, `color: blue; ${style}`, 'color: unset;', detailsToLog);
+            break;
+        case 'warn':
+            console.warn(consoleMessage, `color: orange; ${style}`, 'color: unset;', detailsToLog);
+            break;
+        case 'error':
+            console.error(consoleMessage, `color: red; ${style}`, 'color: unset;', detailsToLog);
+            break;
+        default:
+            console.log(consoleMessage, `color: gray; ${style}`, 'color: unset;', detailsToLog);
+    }
 };
 
 export const logger = {
-    startNewTrace: () => {
-        correlationId = uuidv4();
-    },
-    getCurrentCorrelationId: () => {
-        return correlationId;
-    },
+    // Correlation ID functions are no longer needed for frontend.
+    startNewTrace: () => {},
+    getCurrentCorrelationId: () => '',
+
     success: (message, { context = 'General', ...details } = {}) => {
         log('success', message, context, details);
     },

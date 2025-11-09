@@ -7,21 +7,7 @@ const { backendLogger } = require('./logger');
 const seedDatabase = async () => {
     const context = 'db.seedDatabase';
     try {
-        const schoolCount = await School.countDocuments();
-        let createdSchools = await School.find(); 
-
-        if (schoolCount === 0) {
-            backendLogger.info('No schools found. Seeding initial schools...', { context });
-            const initialSchools = [
-                { name: 'Northwood High School' }, { name: 'Riverdale Academy' },
-                { name: 'Maple Creek Secondary' }, { name: 'Westwood Preparatory' }
-            ];
-            createdSchools = await Promise.all(initialSchools.map(schoolData => School.create(schoolData)));
-            backendLogger.success('Database seeded with initial schools.', { context });
-        } else {
-            backendLogger.info('School data already exists. Skipping school seed.', { context });
-        }
-
+        backendLogger.info('Starting automatic database seeding...', { context });
         const gameCount = await Game.countDocuments();
         if (gameCount === 0) {
             backendLogger.info('No games found. Seeding initial games...', { context });

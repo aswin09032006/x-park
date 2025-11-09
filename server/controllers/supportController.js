@@ -9,12 +9,13 @@ exports.submitFeedback = async (req, res) => {
     const { correlation_id } = req;
     
     try {
-        // Sanitize user input before storing
+        // This configuration strips all HTML tags, leaving only plain text.
         const sanitizedMessage = sanitizeHtml(message, {
             allowedTags: [],
             allowedAttributes: {}
         });
 
+        // Use the sanitized message from this point forward.
         const newFeedback = new Feedback({
             message: sanitizedMessage,
             user: req.user.id,

@@ -60,7 +60,7 @@ exports.completeInvitedRegistration = async (req, res) => {
             lastName: preReg.lastName,
             username: finalUsername,
             displayName: displayNameForAdmin, // Set from real name for admin view
-            nickname: nickname,             // Set from optional form field for student view
+            nickname: nickname, // Set from optional form field for student view
             yearGroup: preReg.yearGroup,
             password: password,
             isVerified: true,

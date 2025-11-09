@@ -190,7 +190,7 @@ const ManageUsers = () => {
             <tbody>
               {loading ? <tr><td colSpan="6" className="text-center p-8 text-muted-foreground">Loading student data...</td></tr> : error ? <tr><td colSpan="6" className="text-center p-8 text-red-500">{error}</td></tr> : combinedList.map(student => (
                 <tr key={student._id} className="border-b border-border last:border-b-0 hover:bg-accent/50">
-                  <td className="p-4 font-medium flex items-center gap-3"><img src={getAvatarUrl(student)} alt="avatar" className="w-8 h-8 rounded-full object-cover" />{student.username}</td>
+                  <td className="p-4 font-medium flex items-center gap-3"><img src={getAvatarUrl(student)} alt="avatar" className="w-8 h-8 rounded-full object-cover" />{student.type === 'registered' ? (student.displayName || student.username) : (`${student.firstName} ${student.lastName}`.trim() || student.email)}</td>
                   {student.type === 'registered' ? (
                     <>
                       <td className="p-4 text-muted-foreground">{student.gameStats.certificates}</td>

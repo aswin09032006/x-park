@@ -17,7 +17,9 @@ exports.getMe = async (req, res) => {
 exports.updateMe = async (req, res) => {
     const context = 'userController.updateMe';
     const { correlation_id } = req;
-    // --- UPDATED: Added 'nickname', removed 'displayName' ---
+    
+    // --- THIS IS THE FIX: The 'school' field is NOT destructured from the request body. ---
+    // Only these specified fields will be considered for an update.
     const { firstName, lastName, nickname, city, county, studentId, yearGroup, landingPagePreference } = req.body;
 
     try {
@@ -28,7 +30,6 @@ exports.updateMe = async (req, res) => {
         if (firstName !== undefined) fieldsToUpdate.firstName = firstName;
         if (lastName !== undefined) fieldsToUpdate.lastName = lastName;
         
-        // --- UPDATED: Automatically update displayName if name changes ---
         if (firstName !== undefined || lastName !== undefined) {
             const newFirstName = firstName !== undefined ? firstName : user.firstName;
             const newLastName = lastName !== undefined ? lastName : user.lastName;
@@ -41,6 +42,8 @@ exports.updateMe = async (req, res) => {
         if (studentId !== undefined) fieldsToUpdate.studentId = studentId;
         if (yearGroup !== undefined) fieldsToUpdate.yearGroup = yearGroup;
         if (landingPagePreference !== undefined) fieldsToUpdate.landingPagePreference = landingPagePreference;
+
+        // The user's school is a protected attribute and is never updated here.
 
         const updatedUser = await User.findByIdAndUpdate(
             req.user.id,
@@ -70,10 +73,10 @@ exports.completeOnboarding = async (req, res) => {
         user.isFirstLogin = false;
         await user.save();
         
-        backendLogger.success('User onboarding completed.', { context, correlation_id, details: { userId: req.user.id } });
+        backendLogger.success({ msg: 'User onboarding completed.', context, correlation_id, details: { userId: req.user.id } });
         res.status(200).json({ msg: 'Onboarding complete.' });
     } catch (err) {
-        backendLogger.error('Failed to complete user onboarding.', { context, correlation_id, details: { userId: req.user.id, error: err.message, stack: err.stack } });
+        backendLogger.error({ msg: 'Failed to complete user onboarding.', context, correlation_id, details: { userId: req.user.id, error: err.message, stack: err.stack } });
         res.status(500).json({ msg: 'Server error' });
     }
 };
@@ -86,7 +89,7 @@ exports.getSavedGames = async (req, res) => {
         if (!user) return res.status(404).json({ msg: 'User not found' });
         res.json(user.savedGames);
     } catch (err) {
-        backendLogger.error('Failed to get saved games.', { context, correlation_id, details: { userId: req.user.id, error: err.message, stack: err.stack } });
+        backendLogger.error({ msg: 'Failed to get saved games.', context, correlation_id, details: { userId: req.user.id, error: err.message, stack: err.stack } });
         res.status(500).json({ msg: 'Server error' });
     }
 };
@@ -97,10 +100,10 @@ exports.saveGame = async (req, res) => {
     const { correlation_id } = req;
     try {
         await User.findByIdAndUpdate(req.user.id, { $addToSet: { savedGames: gameId } });
-        backendLogger.info('Game saved successfully.', { context, correlation_id, details: { userId: req.user.id, gameId } });
+        backendLogger.info({ msg: 'Game saved successfully.', context, correlation_id, details: { userId: req.user.id, gameId } });
         res.status(200).json({ msg: 'Game saved successfully.' });
     } catch (err) {
-        backendLogger.error('Failed to save game.', { context, correlation_id, details: { userId: req.user.id, gameId, error: err.message, stack: err.stack } });
+        backendLogger.error({ msg: 'Failed to save game.', context, correlation_id, details: { userId: req.user.id, gameId, error: err.message, stack: err.stack } });
         res.status(500).json({ msg: 'Server error' });
     }
 };
@@ -111,10 +114,10 @@ exports.unsaveGame = async (req, res) => {
     const { correlation_id } = req;
     try {
         await User.findByIdAndUpdate(req.user.id, { $pull: { savedGames: gameId } });
-        backendLogger.info('Game unsaved successfully.', { context, correlation_id, details: { userId: req.user.id, gameId } });
+        backendLogger.info({ msg: 'Game unsaved successfully.', context, correlation_id, details: { userId: req.user.id, gameId } });
         res.status(200).json({ msg: 'Game unsaved successfully.' });
     } catch (err) {
-        backendLogger.error('Failed to unsave game.', { context, correlation_id, details: { userId: req.user.id, gameId, error: err.message, stack: err.stack } });
+        backendLogger.error({ msg: 'Failed to unsave game.', context, correlation_id, details: { userId: req.user.id, gameId, error: err.message, stack: err.stack } });
         res.status(500).json({ msg: 'Server error' });
     }
 };
@@ -127,7 +130,7 @@ exports.getPlayedGames = async (req, res) => {
         if (!user) return res.status(404).json({ msg: 'User not found' });
         res.json(user.playedGames);
     } catch (err) {
-        backendLogger.error('Failed to get played games.', { context, correlation_id, details: { userId: req.user.id, error: err.message, stack: err.stack } });
+        backendLogger.error({ msg: 'Failed to get played games.', context, correlation_id, details: { userId: req.user.id, error: err.message, stack: err.stack } });
         res.status(500).json({ msg: 'Server error' });
     }
 };
@@ -138,10 +141,10 @@ exports.addPlayedGame = async (req, res) => {
     const { correlation_id } = req;
     try {
         await User.findByIdAndUpdate(req.user.id, { $addToSet: { playedGames: gameId } });
-        backendLogger.info('Game added to played list.', { context, correlation_id, details: { userId: req.user.id, gameId } });
+        backendLogger.info({ msg: 'Game added to played list.', context, correlation_id, details: { userId: req.user.id, gameId } });
         res.status(200).json({ msg: 'Game added to your played list.' });
     } catch (err) {
-        backendLogger.error('Failed to add played game.', { context, correlation_id, details: { userId: req.user.id, gameId, error: err.message, stack: err.stack } });
+        backendLogger.error({ msg: 'Failed to add played game.', context, correlation_id, details: { userId: req.user.id, gameId, error: err.message, stack: err.stack } });
         res.status(500).json({ msg: 'Server error' });
     }
 };
@@ -159,7 +162,7 @@ exports.getGameData = async (req, res) => {
         
         res.json(gameProgress);
     } catch (err) {
-        backendLogger.error('Failed to get game data.', { context, correlation_id, details: { userId: req.user.id, gameIdentifier, error: err.message, stack: err.stack } });
+        backendLogger.error({ msg: 'Failed to get game data.', context, correlation_id, details: { userId: req.user.id, gameIdentifier, error: err.message, stack: err.stack } });
         res.status(500).json({ msg: 'Server Error' });
     }
 };
@@ -190,10 +193,10 @@ exports.updateGameData = async (req, res) => {
 
         await user.save();
         
-        backendLogger.info('Game progress updated.', { context, correlation_id, details: { userId: req.user.id, gameIdentifier, stage: stageStr } });
+        backendLogger.info({ msg: 'Game progress updated.', context, correlation_id, details: { userId: req.user.id, gameIdentifier, stage: stageStr } });
         res.status(200).json({ msg: 'Progress updated.' });
     } catch (err) {
-        backendLogger.error('Failed to update game data.', { context, correlation_id, details: { userId: req.user.id, gameIdentifier, error: err.message, stack: err.stack } });
+        backendLogger.error({ msg: 'Failed to update game data.', context, correlation_id, details: { userId: req.user.id, gameIdentifier, error: err.message, stack: err.stack } });
         res.status(500).json({ msg: 'Server Error' });
     }
 };
@@ -206,7 +209,7 @@ exports.getAllGameData = async (req, res) => {
         if (!user) return res.status(404).json({ msg: 'User not found' });
         res.json(user.gameData || {});
     } catch (err) {
-        backendLogger.error('Failed to get all game data for user.', { context, correlation_id, details: { userId: req.user.id, error: err.message, stack: err.stack } });
+        backendLogger.error({ msg: 'Failed to get all game data for user.', context, correlation_id, details: { userId: req.user.id, error: err.message, stack: err.stack } });
         res.status(500).json({ msg: 'Server Error' });
     }
 };
@@ -224,10 +227,10 @@ exports.updateAvatarPreference = async (req, res) => {
         const user = await User.findByIdAndUpdate(req.user.id, { 'avatar.style': style }, { new: true }).select('-password');
         if (!user) return res.status(404).json({ msg: 'User not found' });
         
-        backendLogger.info('User avatar preference updated.', { context, correlation_id, details: { userId: req.user.id, style } });
+        backendLogger.info({ msg: 'User avatar preference updated.', context, correlation_id, details: { userId: req.user.id, style } });
         res.json(user);
     } catch (err) {
-        backendLogger.error('Failed to update avatar preference.', { context, correlation_id, details: { userId: req.user.id, error: err.message, stack: err.stack } });
+        backendLogger.error({ msg: 'Failed to update avatar preference.', context, correlation_id, details: { userId: req.user.id, error: err.message, stack: err.stack } });
         res.status(500).json({ msg: 'Server error while updating avatar preference.' });
     }
 };
@@ -239,10 +242,10 @@ exports.removeAvatarPreference = async (req, res) => {
         const user = await User.findByIdAndUpdate(req.user.id, { 'avatar.style': 'initials' }, { new: true }).select('-password');
         if (!user) return res.status(404).json({ msg: 'User not found' });
 
-        backendLogger.info('User avatar preference reset.', { context, correlation_id, details: { userId: req.user.id } });
+        backendLogger.info({ msg: 'User avatar preference reset.', context, correlation_id, details: { userId: req.user.id } });
         res.json(user);
     } catch (err) {
-        backendLogger.error('Failed to remove avatar preference.', { context, correlation_id, details: { userId: req.user.id, error: err.message, stack: err.stack } });
+        backendLogger.error({ msg: 'Failed to remove avatar preference.', context, correlation_id, details: { userId: req.user.id, error: err.message, stack: err.stack } });
         res.status(500).json({ msg: 'Server error while removing avatar preference.' });
     }
 };
