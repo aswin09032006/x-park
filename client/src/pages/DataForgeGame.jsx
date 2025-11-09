@@ -87,9 +87,9 @@ const DataForgeGame = () => {
                 window.localStorage.setItem(LOCAL_STORAGE_KEY, initData);
 
                 const script = document.createElement("script");
-                script.src = `${UNITY_BUILD_DIR}/DataForge55_improvement.loader.js`;
+                script.src = `${UNITY_BUILD_DIR}/DataForge56_score_fix.loader.js`;
                 script.onload = () => {
-                    window.createUnityInstance(canvasRef.current, { dataUrl: `${UNITY_BUILD_DIR}/DataForge55_improvement.data.br`, frameworkUrl: `${UNITY_BUILD_DIR}/DataForge55_improvement.framework.js.br`, codeUrl: `${UNITY_BUILD_DIR}/DataForge55_improvement.wasm.br` }, (p) => setLoadingMessage(`Loading Game... ${Math.round(p * 100)}%`))
+                    window.createUnityInstance(canvasRef.current, { dataUrl: `${UNITY_BUILD_DIR}/DataForge56_score_fix.data.br`, frameworkUrl: `${UNITY_BUILD_DIR}/DataForge56_score_fix.framework.js.br`, codeUrl: `${UNITY_BUILD_DIR}/DataForge56_score_fix.wasm.br` }, (p) => setLoadingMessage(`Loading Game... ${Math.round(p * 100)}%`))
                     .then((instance) => {
                         unityInstance.current = instance;
                         setIsLoading(false);

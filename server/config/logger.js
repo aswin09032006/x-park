@@ -17,9 +17,9 @@ try {
 }
 
 const backendLogPath = path.join(logDir, 'backend');
-const isProduction = process.env.ENVIRONMENT?.trim() === 'production';
+const isProduction = process.env.NODE_ENV?.trim() === 'production';
 
-console.log(`[Logger Setup] Environment detected: '${process.env.ENVIRONMENT?.trim()}'. Production mode: ${isProduction}`);
+console.log(`[Logger Setup] Environment detected: '${process.env.NODE_ENV?.trim()}'. Production mode: ${isProduction}`);
 
 // --- Create Streams ---
 function createStreams() {

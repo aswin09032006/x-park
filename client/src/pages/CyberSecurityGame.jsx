@@ -1,5 +1,4 @@
-import React, { useEffect } from 'react';
-import { useGames } from '../context/GameContext';
+import { useEffect } from 'react';
 import { api } from '../services/api';
 import { logger } from '../services/logger';
 
@@ -7,7 +6,7 @@ const GAME_ID = "cyber-security";
 const LOCAL_STORAGE_KEY = 'gameData';
 
 const CyberSecurityGame = () => {
-    const { stopGame } = useGames();
+    // const { stopGame } = useGames();
     const context = `CyberSecurityGame`;
 
     const saveProgressToBackend = async (payload) => {
@@ -69,7 +68,7 @@ const CyberSecurityGame = () => {
 
         return () => {
             window.removeEventListener("message", handleGameMessage);
-            stopGame('1');
+            // stopGame('1');
             logger.info('Component unmounted. Cleaned up listener.', { context });
         };
     }, []);
