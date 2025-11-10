@@ -1,6 +1,6 @@
 import { logger } from './logger';
 
-const API_URL = `${import.meta.env.VITE_BACKEND_PROD_URL}/api`;
+const API_URL = import.meta.env.VITE_ENVIRONMENT === 'production' ? `${import.meta.env.VITE_BACKEND_PROD_URL}/api` : `${import.meta.env.VITE_BACKEND_LOCAL_URL}/api`;
 
 export const publicApi = async (endpoint, method = 'GET', body = null) => {
     const context = `publicApi.${method}`;

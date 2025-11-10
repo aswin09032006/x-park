@@ -57,8 +57,9 @@ const seedDatabase = async () => {
 
 const connectDB = async () => {
     const context = 'db.connectDB';
+    const DATABASE_URI = process.env.NODE_ENV === 'production' ? process.env.MONGO_URI_PROD : process.env.MONGO_URI;
     try {
-        const conn = await mongoose.connect(process.env.MONGO_URI);
+        const conn = await mongoose.connect(DATABASE_URI);
         backendLogger.success(`MongoDB Connected: ${conn.connection.host}`, { context });
         await seedDatabase();
     } catch (error) {

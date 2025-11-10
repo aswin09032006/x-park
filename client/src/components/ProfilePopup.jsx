@@ -13,6 +13,10 @@ const ToggleSwitch = ({ checked, onChange }) => (
 const ProfilePopup = ({ user, onLogout }) => {
   const { theme, toggleTheme } = useTheme(); // Use the theme context
 
+  // --- NICKNAME DISPLAY LOGIC ---
+  const userFullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+  const displayName = user.nickname || userFullName || user.username;
+
   return (
     <div className="absolute top-14 right-0 w-80 bg-popover text-popover-foreground rounded-lg shadow-lg p-6 z-50 border border-border">
       {/* Profile Header */}
@@ -23,7 +27,8 @@ const ProfilePopup = ({ user, onLogout }) => {
           className="w-16 h-16 rounded-full object-cover" 
         />
         <div className="ml-4 overflow-hidden">
-          <p className="font-bold text-lg truncate">{user.username}</p>
+          {/* --- MODIFIED --- */}
+          <p className="font-bold text-lg truncate">{displayName}</p>
           <p className="text-sm text-muted-foreground truncate">{user.email}</p>
         </div>
       </div>

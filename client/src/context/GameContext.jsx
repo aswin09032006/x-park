@@ -13,6 +13,8 @@ const GAME_LEVEL_COUNTS = {
 
 export const GameProvider = ({ children }) => {
     const { isAuthenticated } = useAuth();
+    // --- THIS IS THE FIX (PART 1): Centralize all game data here ---
+    const [allGames, setAllGames] = useState([]);
     const [savedGames, setSavedGames] = useState([]);
     const [playedGames, setPlayedGames] = useState([]);
     const [userGameData, setUserGameData] = useState({});
@@ -24,13 +26,16 @@ export const GameProvider = ({ children }) => {
         const fetchAllGameData = async () => {
             if (isAuthenticated) {
                 try {
-                    const [saved, played, progress] = await Promise.all([
+                    // Fetch all games, saved games, played games, and progress concurrently
+                    const [gamesData, saved, played, progress] = await Promise.all([
+                        api('/games'),
                         api('/users/me/saved-games'),
                         api('/users/me/played-games'),
                         api('/users/me/gamedata')
                     ]);
 
                     if (isMounted) {
+                        setAllGames(gamesData);
                         setSavedGames(saved);
                         setPlayedGames(played);
                         setUserGameData(progress);
@@ -39,6 +44,8 @@ export const GameProvider = ({ children }) => {
                     logger.error("Failed to fetch user game data.", { context, details: { error: error.message } });
                 }
             } else {
+                // Clear all state on logout
+                setAllGames([]);
                 setSavedGames([]);
                 setPlayedGames([]);
                 setUserGameData({});
@@ -52,6 +59,13 @@ export const GameProvider = ({ children }) => {
         };
     }, [isAuthenticated]);
     
+    // --- THIS IS THE FIX (PART 2): Function to update the central game list ---
+    const updateGameInList = (updatedGame) => {
+        setAllGames(prevGames => 
+            prevGames.map(game => game._id === updatedGame._id ? updatedGame : game)
+        );
+    };
+
     const saveGame = async (game) => {
         try {
             setSavedGames((prev) => [...prev, game]);
@@ -120,7 +134,20 @@ export const GameProvider = ({ children }) => {
         }
     }, [isAuthenticated]);
 
-    const value = { savedGames, playedGames, saveGame, unsaveGame, isGameSaved, startGame, isGameInProgress, getGameProgress, fetchUserProgress };
+    // --- THIS IS THE FIX (PART 3): Expose the central list and updater function ---
+    const value = { 
+        allGames, 
+        savedGames, 
+        playedGames, 
+        saveGame, 
+        unsaveGame, 
+        isGameSaved, 
+        startGame, 
+        isGameInProgress, 
+        getGameProgress, 
+        fetchUserProgress,
+        updateGameInList 
+    };
 
     return (
         <GameContext.Provider value={value}>

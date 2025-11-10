@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+// --- /frontend/src/pages/ProfilePage.jsx ---
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useGames } from '../context/GameContext';
 import { api } from '../services/api';
 import { Award, Trash2 } from 'lucide-react';
 import InfoField from '../components/InfoField';
@@ -7,26 +9,129 @@ import EditField from '../components/EditField';
 import { getAvatarUrl } from '../utils/avatar';
 import { logger } from '../services/logger';
 
-const Achievements = ({ gameData }) => {
-  // ... Achievement component logic remains the same
+const Achievements = ({ gameData, allGames }) => {
+  const [selectedBadge, setSelectedBadge] = useState(null);
+
+  const badgeStyles = {
+    bronze: {
+      bg: 'bg-orange-200',
+      text: 'text-orange-800',
+      emoji: '🥉',
+      label: 'Bronze',
+    },
+    silver: {
+      bg: 'bg-gray-200',
+      text: 'text-gray-800',
+      emoji: '🥈',
+      label: 'Silver',
+    },
+    gold: {
+      bg: 'bg-yellow-200',
+      text: 'text-yellow-800',
+      emoji: '🥇',
+      label: 'Gold',
+    },
+  };
+
+  const badgeTypeMap = {
+    1: 'bronze',
+    2: 'silver',
+    3: 'gold',
+    bronze: 'bronze',
+    silver: 'silver',
+    gold: 'gold',
+  };
+
+  const gameTitleMap = useMemo(() => {
+    const map = new Map();
+    if (!allGames) return map;
+    allGames.forEach(game => {
+      map.set(game._id.toString(), game.title);
+    });
+    return map;
+  }, [allGames]);
+
+  const badges = useMemo(() => {
+    const collected = [];
+    if (!gameData || !gameTitleMap.size) return [];
+    for (const [gameId, progress] of Object.entries(gameData)) {
+      if (progress.badges) {
+        for (const [level, value] of Object.entries(progress.badges)) {
+          if (value && value !== "0") {
+            const type = badgeTypeMap[value.toLowerCase?.() || value] || 'unknown';
+            collected.push({
+              id: `${gameId}-${level}`,
+              gameTitle: gameTitleMap.get(gameId) || 'Unknown Game',
+              badgeType: type,
+              level,
+            });
+          }
+        }
+      }
+    }
+    return collected;
+  }, [gameData, gameTitleMap]);
+
+  if (badges.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="text-5xl mb-3 opacity-60">🏆</div>
+        <h3 className="text-lg font-semibold text-slate-700">No achievements yet</h3>
+        <p className="text-sm text-slate-500 mt-1 max-w-xs">
+          Complete challenges to earn your first badge!
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      {gameData?.achievements?.length ? (
-        gameData.achievements.map((ach, i) => (
-          <div key={i} className="flex items-center mb-3">
-            <Award className="text-primary mr-2" />
-            <span>{ach.title}</span>
-          </div>
-        ))
-      ) : (
-        <p className="text-muted-foreground">No achievements yet.</p>
-      )}
+    <div className="space-y-4">
+      <p className="text-sm text-slate-600">
+        {badges.length} {badges.length === 1 ? 'badge' : 'badges'} earned
+      </p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {badges.map(badge => {
+          const style = badgeStyles[badge.badgeType] || {
+            bg: 'bg-gray-200',
+            text: 'text-gray-700',
+            emoji: '🏅',
+            label: 'Unknown',
+          };
+
+          const isSelected = selectedBadge?.id === badge.id;
+
+          return (
+            <div
+              key={badge.id}
+              onClick={() => setSelectedBadge(isSelected ? null : badge)}
+              className={`rounded-lg p-4 border cursor-pointer transition ${
+                isSelected ? 'border-blue-400 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-12 h-12 flex items-center justify-center rounded-full ${style.bg} ${style.text} text-3xl`}
+                >
+                  {style.emoji}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-800 dark:text-gray-200">{style.label} Badge</h3>
+                  <p className="text-sm text-slate-600">{badge.gameTitle}</p>
+                  <p className="text-xs text-slate-500">Level {badge.level}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
 
 const ProfilePage = () => {
   const { user, fetchUser } = useAuth();
+  const { allGames } = useGames();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(false);
@@ -43,7 +148,6 @@ const ProfilePage = () => {
         nickname: user.nickname || '',
         city: user.city || '',
         county: user.county || '',
-        studentId: user.studentId || '',
         yearGroup: String(user.yearGroup ?? ''),
       });
       setSelectedAvatarStyle(user.avatar?.style || 'initials');
@@ -138,13 +242,13 @@ const ProfilePage = () => {
 
   if (!user) return <div className="p-8 text-foreground">Loading profile...</div>;
 
-  const previewUser = { ...user, avatar: { style: selectedAvatarStyle } };
   const userFullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+  const displayName = user.nickname || userFullName || user.username;
+  const previewUser = { ...user, avatar: { style: selectedAvatarStyle } };
 
   return (
     <div className="bg-background text-foreground p-8">
       <div className="mx-auto max-w-5xl">
-        {/* Header */}
         <div className="flex justify-between items-center mb-10">
           <h1 className="text-3xl font-bold">Personal info</h1>
           {!isEditing && (
@@ -157,7 +261,6 @@ const ProfilePage = () => {
           )}
         </div>
 
-        {/* Avatar + Basic Info */}
         <div className="flex items-start mb-10 pb-10 border-b border-border">
           <img
             src={getAvatarUrl(isEditing ? previewUser : user)}
@@ -165,9 +268,7 @@ const ProfilePage = () => {
             className="h-24 w-24 rounded-full object-cover"
           />
           <div className="ml-6 flex-grow">
-            <h2 className="text-2xl font-bold">
-              {userFullName || user.username}
-            </h2>
+            <h2 className="text-2xl font-bold">{displayName}</h2>
             <p className="text-muted-foreground">{user.email}</p>
 
             {isEditing && (
@@ -212,41 +313,46 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Editable / Read-only Sections */}
         {isEditing ? (
           <form onSubmit={handleSaveChanges}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12">
-              <EditField label="First Name" name="firstName" value={formData.firstName} onChange={handleInputChange} />
-              <EditField label="Last Name" name="lastName" value={formData.lastName} onChange={handleInputChange} />
-              <EditField label="Nickname" name="nickname" value={formData.nickname} onChange={handleInputChange} placeholder="Your public display name"/>
-              <EditField label="City" name="city" value={formData.city} onChange={handleInputChange} />
-              <EditField label="County" name="county" value={formData.county} onChange={handleInputChange} />
-              {user.school && <InfoField label="School" value={user.school?.name} />}
-              
-              {user.role === 'student' && (
-                <>
-                  <EditField label="Student ID" name="studentId" value={formData.studentId} onChange={handleInputChange} />
-                  <div className="mb-6">
-                    <label htmlFor="yearGroup" className="block text-sm text-muted-foreground mb-2">
-                      Year group
-                    </label>
-                    <select
-                      id="yearGroup"
-                      name="yearGroup"
-                      value={formData.yearGroup}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring appearance-none"
-                    >
-                      <option value="">Select Year...</option>
-                      {Array.from({ length: 7 }, (_, i) => i + 7).map((year) => (
-                        <option key={year} value={year}>
-                          Year {year}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </>
-              )}
+                {user.role === 'student' ? (
+                    <>
+                        <InfoField label="First Name" value={user.firstName} />
+                        <InfoField label="Last Name" value={user.lastName} />
+                        <EditField label="Nickname" name="nickname" value={formData.nickname} onChange={handleInputChange} placeholder="Your public display name"/>
+                        <InfoField label="Year group" value={user.yearGroup} />
+                    </>
+                ) : (
+                    <>
+                        <EditField label="First Name" name="firstName" value={formData.firstName} onChange={handleInputChange} />
+                        <EditField label="Last Name" name="lastName" value={formData.lastName} onChange={handleInputChange} />
+                        <EditField label="Display Name" name="nickname" value={formData.nickname} onChange={handleInputChange} placeholder="Your public display name"/>
+                        {/* <div className="mb-6">
+                            <label htmlFor="yearGroup" className="block text-sm text-muted-foreground mb-2">
+                            Year group
+                            </label>
+                            <select
+                            id="yearGroup"
+                            name="yearGroup"
+                            value={formData.yearGroup}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-3 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring appearance-none"
+                            >
+                            <option value="">Select Year...</option>
+                            {Array.from({ length: 7 }, (_, i) => i + 7).map((year) => (
+                                <option key={year} value={year}>
+                                Year {year}
+                                </option>
+                            ))}
+                            </select>
+                        </div> */}
+                    </>
+                )}
+                <InfoField label="School" value={user.school?.name} />
+                <InfoField label="City" value={user.school?.city} />
+                <InfoField label="County" value={user.school?.county} />
+                {user.role === 'student' && <InfoField label="Student ID" value={user.studentId} canCopy />}
             </div>
 
             {error && <p className="text-destructive text-sm text-center my-4">{error}</p>}
@@ -274,13 +380,11 @@ const ProfilePage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12">
               <InfoField label="First Name" value={user.firstName} />
               <InfoField label="Last Name" value={user.lastName} />
-              {/* --- THIS IS THE FIX: Removed Display Name, shows Nickname instead --- */}
               <InfoField label="Nickname" value={user.nickname} />
               <InfoField label="Email" value={user.email} canCopy />
-              <InfoField label="City" value={user.city} />
-              <InfoField label="County" value={user.county} />
-              {user.school && <InfoField label="School" value={user.school?.name} />}
-
+              <InfoField label="School" value={user.school?.name} />
+              <InfoField label="City" value={user.school?.city} />
+              <InfoField label="County" value={user.school?.county} />
               {user.role === 'student' && (
                 <>
                   <InfoField label="Student ID" value={user.studentId} canCopy />
@@ -293,7 +397,7 @@ const ProfilePage = () => {
               <div className="mt-12 pt-10 border-t border-border">
                 <h2 className="text-2xl font-bold mb-6">Achievements</h2>
                 {gameData ? (
-                  <Achievements gameData={gameData} />
+                  <Achievements gameData={gameData} allGames={allGames} />
                 ) : (
                   <p className="text-muted-foreground">Loading achievements...</p>
                 )}

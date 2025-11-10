@@ -1,3 +1,4 @@
+// --- /frontend/src/pages/ManageUsers.jsx ---
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { api } from '../services/api';
 import { CheckCircle, ShieldAlert, Clock, Search, Upload, Plus, Trash2, Download, ArrowUp, ArrowDown, ChevronDown, Send } from 'lucide-react';
@@ -14,12 +15,13 @@ const StatCard = ({ title, value, color }) => (
   </div>
 );
 
+// --- THIS IS THE FIX (Part 8): Use totalAttempts in helper function ---
 const processGameData = (gameData) => {
   if (!gameData) return { certificates: 0, badges: 0, gameAttempts: 0 };
   let totalBadges = 0, totalAttempts = 0, totalCertificates = 0;
   for (const progress of Object.values(gameData)) {
     if (progress.badges) totalBadges += Object.keys(progress.badges).length;
-    if (progress.completedLevels) totalAttempts += Object.keys(progress.completedLevels).length;
+    if (progress.totalAttempts) totalAttempts += progress.totalAttempts; // <-- USE NEW FIELD
     if (progress.certificates) totalCertificates += Object.keys(progress.certificates).length;
   }
   return { certificates: totalCertificates, badges: totalBadges, gameAttempts: totalAttempts };

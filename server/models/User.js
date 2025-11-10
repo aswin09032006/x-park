@@ -1,14 +1,17 @@
+// --- /backend/models/User.js ---
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const Schema = mongoose.Schema;
 
+// --- THIS IS THE FIX (Part 1): Add totalAttempts field ---
 const GameProgressSchema = new Schema({
     completedLevels: { type: Map, of: Boolean, default: {} },
     highScores: { type: Map, of: Number, default: {} },
     badges: { type: Map, of: String, default: {} },
     xp: { type: Map, of: Number, default: {} },
-    certificates: { type: Map, of: Boolean, default: {} }
+    certificates: { type: Map, of: Boolean, default: {} },
+    totalAttempts: { type: Number, default: 0 } // <-- ADDED
 }, { _id: false });
 
 const UserSchema = new Schema({
@@ -21,13 +24,12 @@ const UserSchema = new Schema({
     isVerified: { type: Boolean, default: false },
     firstName: { type: String, default: '' },
     lastName: { type: String, default: '' },
-    // --- UPDATED: Added nickname field ---
     nickname: { type: String, default: '' },
     avatar: { style: { type: String, enum: ['initials', 'placeholder'], default: 'initials' } },
     displayName: { type: String, default: '' },
     city: { type: String, default: '' },
     county: { type: String },
-    studentId: { type: String, default: '' },
+    studentId: { type: String, unique: true, sparse: true },
     yearGroup: { type: Number, default: 0 },
     landingPagePreference: { type: String, default: 'Dashboard' },
     isFirstLogin: { type: Boolean, default: true },
@@ -49,10 +51,10 @@ UserSchema.pre('save', async function (next) {
 
 UserSchema.methods.matchPassword = async function (p) { return await bcrypt.compare(p, this.password); };
 
-UserSchema.methods.getResetPasswordToken = function () {
+UserSchema.methods.getResetPasswordToken = function (durationInMs = 10 * 60 * 1000) {
     const resetToken = crypto.randomBytes(20).toString('hex');
     this.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+    this.passwordResetExpires = Date.now() + durationInMs;
     return resetToken;
 };
 

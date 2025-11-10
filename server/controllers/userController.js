@@ -1,3 +1,4 @@
+// --- /backend/controllers/userController.js ---
 const User = require('../models/User');
 const { backendLogger } = require('../config/logger');
 
@@ -5,7 +6,7 @@ exports.getMe = async (req, res) => {
     const context = 'userController.getMe';
     const { correlation_id } = req;
     try {
-        const user = await User.findById(req.user.id).populate('school', 'name').select('-password');
+        const user = await User.findById(req.user.id).populate('school', 'name city county').select('-password');
         if (!user) return res.status(404).json({ msg: 'User not found' });
         res.json(user);
     } catch (err) {
@@ -18,32 +19,35 @@ exports.updateMe = async (req, res) => {
     const context = 'userController.updateMe';
     const { correlation_id } = req;
     
-    // --- THIS IS THE FIX: The 'school' field is NOT destructured from the request body. ---
-    // Only these specified fields will be considered for an update.
-    const { firstName, lastName, nickname, city, county, studentId, yearGroup, landingPagePreference } = req.body;
-
     try {
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ msg: 'User not found' });
 
         const fieldsToUpdate = {};
-        if (firstName !== undefined) fieldsToUpdate.firstName = firstName;
-        if (lastName !== undefined) fieldsToUpdate.lastName = lastName;
-        
-        if (firstName !== undefined || lastName !== undefined) {
-            const newFirstName = firstName !== undefined ? firstName : user.firstName;
-            const newLastName = lastName !== undefined ? lastName : user.lastName;
-            fieldsToUpdate.displayName = `${newFirstName} ${newLastName}`.trim();
+        const {
+            firstName, lastName, nickname, yearGroup, landingPagePreference
+        } = req.body;
+
+        if (landingPagePreference !== undefined) {
+            fieldsToUpdate.landingPagePreference = landingPagePreference;
         }
 
-        if (nickname !== undefined) fieldsToUpdate.nickname = nickname;
-        if (city !== undefined) fieldsToUpdate.city = city;
-        if (county !== undefined) fieldsToUpdate.county = county;
-        if (studentId !== undefined) fieldsToUpdate.studentId = studentId;
-        if (yearGroup !== undefined) fieldsToUpdate.yearGroup = yearGroup;
-        if (landingPagePreference !== undefined) fieldsToUpdate.landingPagePreference = landingPagePreference;
+        if (user.role === 'student') {
+            if (nickname !== undefined) {
+                fieldsToUpdate.nickname = nickname;
+            }
+        } else {
+            if (firstName !== undefined) fieldsToUpdate.firstName = firstName;
+            if (lastName !== undefined) fieldsToUpdate.lastName = lastName;
+            if (yearGroup !== undefined) fieldsToUpdate.yearGroup = yearGroup;
+            if (nickname !== undefined) fieldsToUpdate.nickname = nickname;
 
-        // The user's school is a protected attribute and is never updated here.
+            if (firstName !== undefined || lastName !== undefined) {
+                const newFirstName = firstName !== undefined ? firstName : user.firstName;
+                const newLastName = lastName !== undefined ? lastName : user.lastName;
+                fieldsToUpdate.displayName = `${newFirstName} ${newLastName}`.trim();
+            }
+        }
 
         const updatedUser = await User.findByIdAndUpdate(
             req.user.id,
@@ -167,6 +171,7 @@ exports.getGameData = async (req, res) => {
     }
 };
 
+// --- THIS IS THE FIX (Part 2): Increment totalAttempts on level completion ---
 exports.updateGameData = async (req, res) => {
     const { gameIdentifier } = req.params;
     const { stage, score, badge, xp, status, certificate } = req.body;
@@ -181,11 +186,21 @@ exports.updateGameData = async (req, res) => {
         if (!user) return res.status(404).json({ msg: 'User not found' });
 
         if (!user.gameData.has(gameIdentifier)) {
-            user.gameData.set(gameIdentifier, { completedLevels: new Map(), highScores: new Map(), badges: new Map(), xp: new Map(), certificates: new Map() });
+            user.gameData.set(gameIdentifier, { 
+                completedLevels: new Map(), 
+                highScores: new Map(), 
+                badges: new Map(), 
+                xp: new Map(), 
+                certificates: new Map(),
+                totalAttempts: 0 // Initialize
+            });
         }
         const progress = user.gameData.get(gameIdentifier);
 
-        if (status === 2) progress.completedLevels.set(stageStr, true);
+        if (status === 2) {
+            progress.completedLevels.set(stageStr, true);
+            progress.totalAttempts = (progress.totalAttempts || 0) + 1; // <-- INCREMENT
+        }
         if (score !== undefined && (score > (progress.highScores.get(stageStr) || 0))) progress.highScores.set(stageStr, score);
         if (badge !== undefined && (String(badge) > (progress.badges.get(stageStr) || "0"))) progress.badges.set(stageStr, String(badge));
         if (xp !== undefined) progress.xp.set(stageStr, (progress.xp.get(stageStr) || 0) + xp);

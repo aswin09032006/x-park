@@ -1,3 +1,4 @@
+// --- /backend/controllers/authController.js ---
 const User = require('../models/User');
 const School = require('../models/School');
 const PreRegisteredStudent = require('../models/PreRegisteredStudent');
@@ -53,6 +54,9 @@ exports.completeInvitedRegistration = async (req, res) => {
         const finalUsername = preReg.username;
         const displayNameForAdmin = `${preReg.firstName} ${preReg.lastName}`.trim();
 
+        // --- ADDED: Generate unique student ID ---
+        const studentId = crypto.randomBytes(8).toString('hex');
+
         await User.create({
             email: preReg.email,
             school: preReg.school,
@@ -65,6 +69,7 @@ exports.completeInvitedRegistration = async (req, res) => {
             password: password,
             isVerified: true,
             isApproved: true,
+            studentId: studentId, // --- ADDED ---
         });
 
         await PreRegisteredStudent.deleteOne({ _id: preReg._id });
@@ -124,11 +129,15 @@ exports.registerComplete = async (req, res) => {
         if (!user) return res.status(400).json({ msg: 'Verification has expired.' });
         if (await User.findOne({ username: req.body.username })) return res.status(400).json({ msg: 'Username taken.' });
         
+        // --- ADDED: Generate unique student ID for public registration ---
+        const studentId = crypto.randomBytes(8).toString('hex');
+
         user.username = req.body.username; 
         user.password = req.body.password; 
         user.isVerified = true; 
         user.verificationCode = undefined; 
         user.verificationCodeExpires = undefined;
+        user.studentId = studentId; // --- ADDED ---
         await user.save();
 
         await PreRegisteredStudent.deleteOne({ email: req.body.email.toLowerCase(), school: user.school });
@@ -225,14 +234,34 @@ exports.forgotPassword = async (req, res) => {
     }
 };
 
-
+// --- THIS IS THE FIX (Part 2): Updated activation/reset logic ---
 exports.resetPassword = async (req, res) => {
+    const { password, firstName, lastName } = req.body;
     try {
-        const user = await User.findOne({ passwordResetToken: crypto.createHash('sha256').update(req.params.resetToken).digest('hex'), passwordResetExpires: { $gt: Date.now() } });
+        const user = await User.findOne({ 
+            passwordResetToken: crypto.createHash('sha256').update(req.params.resetToken).digest('hex'), 
+            passwordResetExpires: { $gt: Date.now() } 
+        });
+
         if (!user) return res.status(400).json({ msg: 'Invalid or expired token' });
-        user.password = req.body.password; user.passwordResetToken = undefined; user.passwordResetExpires = undefined;
+        
+        // Update password
+        user.password = password;
+        
+        // If it's an admin activating for the first time, set their name and verify them
+        if (user.role === 'schooladmin' && !user.isVerified) {
+            user.firstName = firstName;
+            user.lastName = lastName;
+            user.displayName = `${firstName} ${lastName}`.trim();
+            user.isVerified = true;
+        }
+
+        // Clear the token fields
+        user.passwordResetToken = undefined; 
+        user.passwordResetExpires = undefined;
         await user.save();
-        res.status(200).json({ msg: 'Password reset successful.' });
+
+        res.status(200).json({ msg: 'Account updated successfully.' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ msg: 'Server error' });
@@ -335,6 +364,9 @@ exports.publicRegisterComplete = async (req, res) => {
             return res.status(400).json({ msg: 'This username is already taken. Please choose another one.' });
         }
 
+        // --- ADDED: Generate unique student ID for public registration ---
+        const studentId = crypto.randomBytes(8).toString('hex');
+
         user.firstName = firstName;
         user.lastName = lastName;
         user.username = finalUsername;
@@ -343,6 +375,7 @@ exports.publicRegisterComplete = async (req, res) => {
         user.isApproved = true;
         user.verificationCode = undefined;
         user.verificationCodeExpires = undefined;
+        user.studentId = studentId; // --- ADDED ---
         
         await user.save();
 

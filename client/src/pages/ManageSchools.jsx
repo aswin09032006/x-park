@@ -6,11 +6,11 @@ import { logger } from '../services/logger';
 
 const ManageSchools = () => {
     const [schools, setSchools] = useState([]);
-    const [formData, setFormData] = useState({ name: '', capacity: '' });
+    const [formData, setFormData] = useState({ name: '', capacity: '', city: '', county: '' });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [editingSchoolId, setEditingSchoolId] = useState(null);
-    const [editingData, setEditingData] = useState({ name: '', capacity: '' });
+    const [editingData, setEditingData] = useState({ name: '', capacity: '', city: '', county: '' });
 
     const fetchSchools = useCallback(async () => {
         const context = 'ManageSchools.fetchSchools';
@@ -39,8 +39,9 @@ const ManageSchools = () => {
         if (!formData.name.trim()) return;
         logger.info('Attempting to create a new school.', { context, details: { name: formData.name } });
         try {
-            await api('/superadmin/schools', 'POST', { name: formData.name, capacity: formData.capacity });
-            setFormData({ name: '', capacity: '' });
+            // --- MODIFIED ---
+            await api('/superadmin/schools', 'POST', { name: formData.name, capacity: formData.capacity, city: formData.city, county: formData.county });
+            setFormData({ name: '', capacity: '', city: '', county: '' });
             fetchSchools();
             logger.success('School created successfully.', { context });
         } catch (err) {
@@ -66,7 +67,7 @@ const ManageSchools = () => {
 
     const handleEditClick = (school) => {
         setEditingSchoolId(school._id);
-        setEditingData({ name: school.name, capacity: school.capacity });
+        setEditingData({ name: school.name, capacity: school.capacity, city: school.city, county: school.county });
     };
 
     const handleCancelEdit = () => setEditingSchoolId(null);
@@ -76,7 +77,8 @@ const ManageSchools = () => {
         logger.startNewTrace();
         logger.info('Attempting to save school edits.', { context, details: { schoolId } });
         try {
-            await api(`/superadmin/schools/${schoolId}`, 'PUT', { name: editingData.name, capacity: editingData.capacity });
+            // --- MODIFIED ---
+            await api(`/superadmin/schools/${schoolId}`, 'PUT', { name: editingData.name, capacity: editingData.capacity, city: editingData.city, county: editingData.county });
             setEditingSchoolId(null);
             fetchSchools();
             logger.success('School updated successfully.', { context, details: { schoolId } });
@@ -94,11 +96,23 @@ const ManageSchools = () => {
             <h1 className="text-3xl font-bold mb-8">Manage Schools</h1>
             <form onSubmit={handleCreateSchool} className="mb-8 p-6 bg-card border border-border rounded-lg">
                 <h2 className="text-xl font-semibold mb-4">Add a New School</h2>
-                <div className="flex gap-4 items-end">
+                {/* --- MODIFIED --- */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                     <div className="flex-grow">
                         <label className="block text-sm text-muted-foreground mb-1">School Name</label>
                         <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Enter school name" className="w-full bg-input border border-border rounded-md px-4 py-2" required />
                     </div>
+                     {/* --- ADDED --- */}
+                    <div className="flex-grow">
+                        <label className="block text-sm text-muted-foreground mb-1">City</label>
+                        <input type="text" value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} placeholder="e.g., London" className="w-full bg-input border border-border rounded-md px-4 py-2" />
+                    </div>
+                    <div className="flex-grow">
+                        <label className="block text-sm text-muted-foreground mb-1">County</label>
+                        <input type="text" value={formData.county} onChange={(e) => setFormData({...formData, county: e.target.value})} placeholder="e.g., Greater London" className="w-full bg-input border border-border rounded-md px-4 py-2" />
+                    </div>
+                </div>
+                <div className="flex gap-4 items-end mt-4">
                     <div className="w-32">
                         <label className="block text-sm text-muted-foreground mb-1">Capacity</label>
                         <input type="number" value={formData.capacity} onChange={(e) => setFormData({...formData, capacity: e.target.value})} placeholder="e.g., 150" className="w-full bg-input border border-border rounded-md px-4 py-2" />
@@ -112,19 +126,25 @@ const ManageSchools = () => {
                 <table className="w-full text-left">
                     <thead className="bg-secondary">
                         <tr>
-                            <th className="p-4 font-medium w-3/5">School Name</th>
+                            <th className="p-4 font-medium w-2/5">School Name</th>
+                            {/* --- ADDED --- */}
+                            <th className="p-4 font-medium">City</th>
+                            <th className="p-4 font-medium">County</th>
                             <th className="p-4 font-medium">Capacity</th>
                             <th className="p-4 font-medium text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {loading && <tr><td colSpan="3" className="text-center p-8">Loading...</td></tr>}
-                        {error && <tr><td colSpan="3" className="text-center p-8 text-destructive">{error}</td></tr>}
+                        {loading && <tr><td colSpan="5" className="text-center p-8">Loading...</td></tr>}
+                        {error && <tr><td colSpan="5" className="text-center p-8 text-destructive">{error}</td></tr>}
                         {schools.map(school => (
                             <tr key={school._id} className="border-t border-border">
                                 {editingSchoolId === school._id ? (
                                     <>
                                         <td className="p-2"><input type="text" value={editingData.name} onChange={e => setEditingData({...editingData, name: e.target.value})} className="bg-input border border-border rounded-md px-2 py-1 w-full" /></td>
+                                        {/* --- ADDED --- */}
+                                        <td className="p-2"><input type="text" value={editingData.city} onChange={e => setEditingData({...editingData, city: e.target.value})} className="bg-input border border-border rounded-md px-2 py-1 w-full" /></td>
+                                        <td className="p-2"><input type="text" value={editingData.county} onChange={e => setEditingData({...editingData, county: e.target.value})} className="bg-input border border-border rounded-md px-2 py-1 w-full" /></td>
                                         <td className="p-2"><input type="number" value={editingData.capacity} onChange={e => setEditingData({...editingData, capacity: e.target.value})} className="bg-input border border-border rounded-md px-2 py-1 w-full" /></td>
                                         <td className="p-2 text-right">
                                             <button onClick={() => handleSaveEdit(school._id)} className="text-green-500 hover:opacity-75 mr-3"><Check size={20} /></button>
@@ -134,6 +154,9 @@ const ManageSchools = () => {
                                 ) : (
                                     <>
                                         <td className="p-4 font-medium">{school.name}</td>
+                                        {/* --- ADDED --- */}
+                                        <td className="p-4 text-muted-foreground">{school.city || 'N/A'}</td>
+                                        <td className="p-4 text-muted-foreground">{school.county || 'N/A'}</td>
                                         <td className="p-4 text-muted-foreground">{school.capacity}</td>
                                         <td className="p-4 text-right">
                                             <button onClick={() => handleEditClick(school)} className="text-muted-foreground hover:text-foreground mr-3"><Edit size={18} /></button>

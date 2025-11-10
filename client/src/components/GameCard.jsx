@@ -1,5 +1,6 @@
+// --- /frontend/src/components/GameCard.jsx ---
 import React from 'react';
-import { Bookmark } from 'lucide-react';
+import { Bookmark, Star } from 'lucide-react';
 import { useGames } from '../context/GameContext';
 
 const GameCard = React.memo(({ game, onClick }) => {
@@ -64,11 +65,12 @@ const GameCard = React.memo(({ game, onClick }) => {
               </div>
             </div>
 
+            {/* --- THIS IS THE FIX: Reverted to only show global averageRating --- */}
             {!isComingSoon && (
               <div>
                 <p className="text-gray-400 text-xs mb-1">Rating</p>
                 <div className="flex items-center">
-                  <span className="text-green-400 mr-1 text-base">⭐</span>
+                  <Star size={16} className="text-green-400 mr-1" />
                   <span className="text-white font-medium">
                     {averageRating ? averageRating.toFixed(1) : 'N/A'}
                   </span>
@@ -91,6 +93,7 @@ const GameCard = React.memo(({ game, onClick }) => {
 }, areEqual);
 
 function areEqual(prevProps, nextProps) {
+  // --- THIS IS THE FIX: Removed schoolAverageRating from the comparison ---
   return (
     prevProps.game._id === nextProps.game._id &&
     prevProps.game.isComingSoon === nextProps.game.isComingSoon &&

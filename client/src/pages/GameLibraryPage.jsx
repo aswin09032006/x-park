@@ -1,50 +1,35 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, Search, ChevronDown, Play, PlusCircle, CheckCircle } from 'lucide-react';
-import { api } from '../services/api';
+// --- THIS IS THE FIX (Part 1): Import the Bookmark icon ---
+import { ChevronLeft, Search, ChevronDown, Play, Bookmark } from 'lucide-react';
 import { useGames } from '../context/GameContext';
 import GameCarousel from '../components/GameCarousel';
 import GameModal from '../components/GameModal';
 import bg from '../../public/bg.png';
-import { logger } from '../services/logger';
 
 const GameLibraryPage = () => {
-    const [games, setGames] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const { allGames: games, savedGames, saveGame, unsaveGame, startGame, updateGameInList } = useGames();
+    
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [selectedGame, setSelectedGame] = useState(null);
-    const { savedGames, saveGame, unsaveGame, startGame } = useGames();
-
-    useEffect(() => {
-        const context = 'GameLibraryPage.useEffect';
-        logger.startNewTrace();
-        const fetchGames = async () => {
-            try {
-                const gamesData = await api('/games');
-                const sortedGames = gamesData.sort((a, b) => a.isComingSoon - b.isComingSoon);
-                setGames(sortedGames);
-                logger.info('Successfully fetched game library.', { context });
-            } catch (err) {
-                setError(err.message || 'Failed to fetch games.');
-                logger.error('Failed to fetch game library.', { context, details: { error: err.message } });
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchGames();
-    }, []);
 
     const handleCardClick = (game) => setSelectedGame(game);
     const handleCloseModal = () => setSelectedGame(null);
+
+    const handleGameUpdate = (updatedGame) => {
+        updateGameInList(updatedGame);
+        if (selectedGame && selectedGame._id === updatedGame._id) {
+            setSelectedGame(updatedGame);
+        }
+    };
 
     const categories = useMemo(() => ['All', ...new Set(games.map(g => g.category))], [games]);
 
     const filteredGames = useMemo(() => {
         return games
             .filter(game => (selectedCategory === 'All' || game.category === selectedCategory) && game.title.toLowerCase().includes(searchTerm.toLowerCase()))
-            .sort((a, b) => a.isComingSoon - b.isComingSoon);
+            .sort((a, b) => (a.isComingSoon === b.isComingSoon) ? 0 : a.isComingSoon ? 1 : -1);
     }, [games, searchTerm, selectedCategory]);
 
     const gamesByCategory = useMemo(() => {
@@ -52,7 +37,7 @@ const GameLibraryPage = () => {
             (acc[game.category] = acc[game.category] || []).push(game);
             return acc;
         }, {});
-        Object.keys(grouped).forEach(cat => grouped[cat].sort((a, b) => a.isComingSoon - b.isComingSoon));
+        Object.keys(grouped).forEach(cat => grouped[cat].sort((a, b) => a.isComingSoon - b.isComingSoon ? 1 : -1));
         return grouped;
     }, [filteredGames]);
 
@@ -68,8 +53,7 @@ const GameLibraryPage = () => {
         if (heroGame && heroGame.gameUrl && !heroGame.isComingSoon) startGame(heroGame);
     };
 
-    if (loading) return <div className="text-foreground text-center p-8">Loading Game Library...</div>;
-    if (error) return <div className="text-destructive text-center p-8">Error: {error}</div>;
+    if (games.length === 0) return <div className="text-foreground text-center p-8">Loading Game Library...</div>;
 
     return (
         <div className="bg-background text-foreground min-h-screen">
@@ -83,10 +67,7 @@ const GameLibraryPage = () => {
                                 <h1>Game Library</h1>
                             </Link>
                             <div className="flex items-center gap-4">
-                                <div className="relative">
-                                    <input type="text" placeholder="Search games..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-64 bg-transparent border border-border rounded-lg py-2 pl-4 pr-10 text-sm text-white focus:outline-none focus:border-gray-400" />
-                                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                                </div>
+                                <div className="relative"><input type="text" placeholder="Search games..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-64 bg-transparent border border-border rounded-lg py-2 pl-4 pr-10 text-sm text-white focus:outline-none focus:border-gray-400" /><Search className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} /></div>
                                 <div className="relative">
                                     <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className="bg-transparent border border-border rounded-lg py-2 pl-4 pr-10 text-sm text-white appearance-none focus:outline-none focus:border-gray-400 w-40">
                                         <option value="All" className="bg-card">All Categories</option>
@@ -105,27 +86,29 @@ const GameLibraryPage = () => {
                                         <Play size={20} className="mr-3 fill-white" /> Play
                                     </button>
                                 </Link>
-                                <button onClick={handleSaveToggle} className={`flex items-center bg-black/30 border border-white/20 backdrop-blur-sm text-white font-medium py-3 px-6 rounded-2xl hover:bg-black/50 hover:border-white/30 transition-all duration-300 ${isHeroGameSaved ? 'border-primary' : ''}`}>
-                                    <span className="mr-3">{isHeroGameSaved ? 'Saved' : 'Save'}</span>
-                                    <div className="w-6 h-6 border-2 border-white rounded-full flex items-center justify-center">
-                                        {isHeroGameSaved ? <CheckCircle size={16} className="text-primary" /> : <PlusCircle size={16} />}
-                                    </div>
+                                {/* --- THIS IS THE FIX (Part 2): Replace the button content with the Bookmark icon --- */}
+                                <button 
+                                    onClick={handleSaveToggle} 
+                                    className="flex items-center gap-3 bg-black/30 border border-white/20 backdrop-blur-sm text-white font-medium py-3 px-6 rounded-2xl hover:bg-black/50 hover:border-white/30 transition-all duration-300"
+                                >
+                                    <Bookmark size={20} className={`transition-all ${isHeroGameSaved ? 'fill-white' : 'fill-transparent'}`} />
+                                    <span>{isHeroGameSaved ? 'Saved' : 'Save'}</span>
                                 </button>
                             </div>
                         </div>
                     </div>
                 )}
                 <div className="space-y-0">
-                    {Object.keys(gamesByCategory).length > 0 ? (
-                        Object.entries(gamesByCategory).map(([category, gamesInCategory]) => (
-                            <GameCarousel key={category} title={category} gameList={gamesInCategory} onCardClick={handleCardClick} />
-                        ))
-                    ) : (
-                        <p className="text-center text-muted-foreground">No games found matching your criteria.</p>
-                    )}
+                    {Object.keys(gamesByCategory).length > 0 ? (Object.entries(gamesByCategory).map(([category, gamesInCategory]) => (<GameCarousel key={category} title={category} gameList={gamesInCategory} onCardClick={handleCardClick} />))) : (<p className="text-center text-muted-foreground">No games found matching your criteria.</p>)}
                 </div>
             </main>
-            <GameModal game={selectedGame} isOpen={!!selectedGame} onClose={handleCloseModal} />
+            
+            <GameModal 
+                game={selectedGame} 
+                isOpen={!!selectedGame} 
+                onClose={handleCloseModal}
+                onGameUpdate={handleGameUpdate}
+            />
         </div>
     );
 };

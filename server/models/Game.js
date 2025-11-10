@@ -11,7 +11,8 @@ const GameSchema = new mongoose.Schema({
 
     ratings: [{
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-        rating: { type: Number, required: true, min: 1, max: 5 }
+        rating: { type: Number, required: true, min: 1, max: 5 },
+        userSchool: { type: mongoose.Schema.Types.ObjectId, ref: 'School' }
     }],
     averageRating: { type: Number, default: 0, min: 0, max: 5 },
     numRatings: { type: Number, default: 0 }

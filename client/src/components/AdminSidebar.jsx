@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star } from 'lucide-react';
+import { Star, Info } from 'lucide-react'; // Import the Info icon
 import { getAvatarUrl } from '../utils/avatar';
 
 const GameList = ({ title, games, showRating = false }) => (
@@ -21,7 +21,11 @@ const GameList = ({ title, games, showRating = false }) => (
                             )}
                             <p className="text-card-foreground">{game.title}</p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        {/* --- THIS IS THE FIX (Part 1): Add a tooltip to the rating section --- */}
+                        <div 
+                            className="flex items-center gap-2"
+                            title={showRating ? "This rating is calculated only from students at your school." : ""}
+                        >
                             {showRating && <Star size={14} className="text-yellow-500" /> }
                             {showRating ? game.averageRating.toFixed(1) : `${game.students} Students`}
                             <span className={`py-1 px-3 rounded-full text-xs font-semibold ${showRating ? 'bg-muted/50 text-muted-foreground' : 'hidden'}`}>
@@ -36,6 +40,13 @@ const GameList = ({ title, games, showRating = false }) => (
                 </li>
             )}
         </ul>
+        {/* --- THIS IS THE FIX (Part 2): Add a clarifying footnote --- */}
+        {showRating && games.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-border text-xs text-muted-foreground flex items-center gap-2">
+                <Info size={14} />
+                <span>Ratings are based on your school's students only.</span>
+            </div>
+        )}
     </div>
 );
 

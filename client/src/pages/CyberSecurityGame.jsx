@@ -6,7 +6,6 @@ const GAME_ID = "cyber-security";
 const LOCAL_STORAGE_KEY = 'gameData';
 
 const CyberSecurityGame = () => {
-    // const { stopGame } = useGames();
     const context = `CyberSecurityGame`;
 
     const saveProgressToBackend = async (payload) => {
@@ -43,32 +42,49 @@ const CyberSecurityGame = () => {
         };
         initializeGameData();
 
+        // --- THIS IS THE FIX: Reverted to using postMessage listener ---
         const handleGameMessage = (event) => {
             const message = event.data;
-            if (typeof message !== 'string' || !message.startsWith("Unity sent JSON to page:")) return;
-            logger.info('Final game data packet received via postMessage.', { context });
+            if (typeof message !== 'string' || !message.startsWith("Unity sent JSON to page:")) {
+                return;
+            }
+
+            logger.info('Final game data packet received via postMessage.', { context, details: { rawMessage: message } });
 
             try {
                 const jsonString = message.substring(message.indexOf('{'));
                 const gameData = JSON.parse(jsonString);
+                
+                logger.info('Successfully parsed JSON from game.', { context, details: { parsedData: gameData } });
+
+                const extractValue = (data) => {
+                    if (Array.isArray(data) && data.length > 0) return data[0];
+                    return data;
+                };
+
                 const finalPayload = {
                     stage: 1,
-                    status: 2,
-                    score: parseInt(gameData.high_score?.[0]) || 0,
-                    badge: parseInt(gameData.badges?.[0]) || 0,
-                    xp: parseInt(gameData.xp_earned?.[0]) || 0,
-                    certificate: 1
+                    status: 2, // 2 = completed
+                    score: parseInt(extractValue(gameData.high_score)) || 0,
+                    badge: parseInt(extractValue(gameData.badges)) || 0,
+                    xp: parseInt(extractValue(gameData.xp_earned)) || 0,
+                    certificate: true,
                 };
+
+                logger.info('Constructed final payload to send to backend.', { context, details: { payload: finalPayload } });
+                
                 saveProgressToBackend(finalPayload);
+
             } catch (e) {
                 logger.error("Failed to parse or process JSON from postMessage.", { context, details: { error: e.message, rawMessage: message } });
             }
         };
+
         window.addEventListener("message", handleGameMessage);
+        // --- END OF FIX ---
 
         return () => {
             window.removeEventListener("message", handleGameMessage);
-            // stopGame('1');
             logger.info('Component unmounted. Cleaned up listener.', { context });
         };
     }, []);
@@ -89,3 +105,4 @@ const CyberSecurityGame = () => {
 };
 
 export default CyberSecurityGame;
+

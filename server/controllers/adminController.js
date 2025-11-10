@@ -180,7 +180,7 @@ exports.bulkAddStudents = async (req, res) => {
         return res.status(400).json({ msg: 'No file uploaded.' });
     }
 
-    const school = await School.findById(req.user.school).select('name');
+    const school = await School.findById(req.user.school).select('name capacity');
     if (!school) return res.status(404).json({ msg: "Admin's school not found." });
 
     const { emailSubject, emailBody } = req.body;
@@ -238,6 +238,20 @@ exports.bulkAddStudents = async (req, res) => {
             if (validStudents.length === 0) {
                 return res.status(400).json({ msg: 'No valid rows to process.', details: { failedRows } });
             }
+
+            // --- BUG FIX: Check school capacity before proceeding ---
+            const registeredCount = await User.countDocuments({ school: req.user.school, role: 'student' });
+            const pendingCount = await PreRegisteredStudent.countDocuments({ school: req.user.school, status: 'pending' });
+            const remainingSeats = Math.max(0, school.capacity - (registeredCount + pendingCount));
+
+            if (validStudents.length > remainingSeats) {
+                return res.status(400).json({
+                    msg: `Upload failed. This upload of ${validStudents.length} students exceeds the school's remaining capacity of ${remainingSeats} seats.`,
+                    details: { failedRows }
+                });
+            }
+            // --- END OF BUG FIX ---
+
 
             // Check for existing users or preregistrations
             const emails = validStudents.map(s => s.email);
@@ -302,8 +316,17 @@ exports.inviteStudent = async (req, res) => {
     const { email, firstName, lastName, yearGroup, emailSubject, emailBody } = req.body;
 
     try {
-        const school = await School.findById(req.user.school).select('name');
+        const school = await School.findById(req.user.school).select('name capacity');
         if (!school) return res.status(404).json({ msg: "Admin's school not found." });
+
+        // --- BUG FIX: Check school capacity before proceeding ---
+        const registeredCount = await User.countDocuments({ school: req.user.school, role: 'student' });
+        const pendingCount = await PreRegisteredStudent.countDocuments({ school: req.user.school, status: 'pending' });
+
+        if (registeredCount + pendingCount >= school.capacity) {
+            return res.status(400).json({ msg: `School capacity of ${school.capacity} has been reached. Cannot invite more students.` });
+        }
+        // --- END OF BUG FIX ---
 
         if (await User.findOne({ email })) {
             return res.status(400).json({ msg: 'A registered user with this email already exists.' });
@@ -445,11 +468,12 @@ exports.getStudentGameData = async (req, res) => {
         const { studentId } = req.params;
         const adminSchoolId = req.user.school.toString();
 
-    const student = await User.findOne({
-        _id: studentId,            // target user
-        school: adminSchoolId,     // same school as the admin
-        role: 'student'            // ensure it’s a student record
-    }).select('gameData school');
+        const student = await User.findOne({
+            _id: studentId,
+            school: adminSchoolId,
+            role: 'student'
+        }).select('gameData school');
+        
         if (!student || student.school.toString() !== adminSchoolId) {
             return res.status(404).json({ msg: 'Student not found in your school.' });
         }
@@ -469,7 +493,6 @@ exports.getStudentGameData = async (req, res) => {
         const results = [];
         for (const [gameId, progress] of student.gameData.entries()) {
             const badges = progress.badges ? progress.badges.size : 0;
-            // --- THIS IS THE FIX: Sum actual certificates ---
             const certificates = progress.certificates ? progress.certificates.size : 0;
             const score = progress.highScores
                 ? Array.from(progress.highScores.values()).reduce((a, b) => a + b, 0)
@@ -477,9 +500,10 @@ exports.getStudentGameData = async (req, res) => {
 
             results.push({
                 gameTitle: gameMap.get(gameId) || 'Unknown Game',
-                gamesPlayed: progress.completedLevels ? progress.completedLevels.size : 0,
+                // Use the new totalAttempts field
+                gamesPlayed: progress.totalAttempts || 0,
                 badges,
-                certificates, // Use the correct value
+                certificates,
                 score,
             });
         }

@@ -1,3 +1,4 @@
+// --- /backend/controllers/dashboardController.js ---
 const User = require('../models/User');
 const Game = require('../models/Game');
 const School = require('../models/School');
@@ -28,7 +29,7 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
             totalCertificates: 0,
             studentsWithBadges: 0,
             studentsWithCertificates: 0,
-            totalGameAttempts: 0,
+            totalGameAttempts: 0, // <-- This will be updated
             topPerformers: [],
         };
 
@@ -36,10 +37,10 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
 
         for (const student of students) {
             let studentTotalBadges = 0;
-            let studentTotalCertificates = 0; // <-- FIX: Initialize certificate counter
+            let studentTotalCertificates = 0;
             let studentScore = 0;
             let hasBadge = false;
-            let studentAttempts = 0;
+            let studentAttempts = 0; // <-- This will be updated
 
             if (student.gameData && student.gameData.size > 0) {
                 student.gameData.forEach((progress, gameId) => {
@@ -47,7 +48,6 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
                     studentTotalBadges += gameBadges;
                     if (gameBadges > 0) hasBadge = true;
 
-                    // --- THIS IS THE FIX: Sum actual certificates earned ---
                     const gameCertificates = progress.certificates ? progress.certificates.size : 0;
                     studentTotalCertificates += gameCertificates;
                     
@@ -55,18 +55,15 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
                         progress.highScores.forEach(score => studentScore += score);
                     }
                     
-                    if (progress.completedLevels) {
-                        studentAttempts += progress.completedLevels.size;
-                    }
+                    // Use the new totalAttempts field
+                    studentAttempts += progress.totalAttempts || 0;
                     
-                    gamePlayCounts[gameId] = (gamePlayCounts[gameId] || 0) + 1;
+                    gamePlayCounts[gameId] = (gamePlayCounts[gameId] || 0) + (progress.totalAttempts || 0);
                 });
             }
 
             if (hasBadge) stats.studentsWithBadges++;
             stats.totalBadges += studentTotalBadges;
-            
-            // --- THIS IS THE FIX: Use the summed total, not a calculation ---
             stats.totalCertificates += studentTotalCertificates;
             if (studentTotalCertificates > 0) stats.studentsWithCertificates++;
 
@@ -105,13 +102,8 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
         allGames.forEach(game => {
             const gameInfo = { title: game.title, imageUrl: game.imageUrl };
             gameMap.set(game._id.toString(), gameInfo);
-            
-            if (game.title === 'Data Forge') {
-                gameMap.set('data-forge', gameInfo);
-            }
-            if (game.title === 'Network Shield') {
-                gameMap.set('cyber-security', gameInfo);
-            }
+            if (game.title === 'Data Forge') gameMap.set('data-forge', gameInfo);
+            if (game.title === 'Network Shield') gameMap.set('cyber-security', gameInfo);
         });
 
         const topPlayedGames = Object.entries(gamePlayCounts)
@@ -120,7 +112,7 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
                 return {
                     title: gameInfo.title,
                     imageUrl: gameInfo.imageUrl,
-                    students: count
+                    students: count // This now represents total plays, not unique students
                 };
             })
             .sort((a, b) => b.students - a.students)
@@ -139,68 +131,60 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
     }
 };
 
-
-
-// @desc    Get aggregated game progress for a school admin's school
-// @route   GET /api/dashboard/school-game-progress
-// @access  Private (School Admin)
+// --- THIS IS THE FIX: Added rating calculation ---
 exports.getSchoolGameProgress = async (req, res) => {
     try {
         const adminSchoolId = req.user.school;
 
-        const allGames = await Game.find({}).select('title category imageUrl');
+        const students = await User.find({ school: adminSchoolId, role: 'student' }).select('_id gameData');
+        const studentIds = new Set(students.map(s => s._id.toString()));
+
+        const allGames = await Game.find({}).select('title category imageUrl ratings');
         
         const gameStatsMap = new Map();
         const idTranslationMap = new Map();
 
         allGames.forEach(game => {
             const gameIdStr = game._id.toString();
+            const schoolRatings = game.ratings.filter(r => studentIds.has(r.user.toString()));
+            let averageSchoolRating = 0;
+            if (schoolRatings.length > 0) {
+                const total = schoolRatings.reduce((acc, r) => acc + r.rating, 0);
+                averageSchoolRating = total / schoolRatings.length;
+            }
+
             gameStatsMap.set(gameIdStr, {
                 _id: game._id,
                 title: game.title,
                 category: game.category,
                 imageUrl: game.imageUrl,
                 badges: 0,
-                attempts: 0,
+                attempts: 0, // <-- This will be updated
                 certificates: 0,
+                averageRating: averageSchoolRating.toFixed(1),
             });
 
             idTranslationMap.set(gameIdStr, gameIdStr);
-            if (game.title === 'Data Forge') {
-                idTranslationMap.set('data-forge', gameIdStr);
-            }
-            if (game.title === 'Network Shield') {
-                idTranslationMap.set('cyber-security', gameIdStr);
-            }
+            if (game.title === 'Data Forge') idTranslationMap.set('data-forge', gameIdStr);
+            if (game.title === 'Network Shield') idTranslationMap.set('cyber-security', gameIdStr);
         });
-
-        const students = await User.find({
-            school: adminSchoolId,
-            role: 'student',
-            isApproved: true
-        }).select('gameData');
 
         for (const student of students) {
             if (student.gameData && student.gameData.size > 0) {
                 student.gameData.forEach((progress, gameId) => {
                     const correctGameId = idTranslationMap.get(gameId);
-
                     if (correctGameId && gameStatsMap.has(correctGameId)) {
                         const stats = gameStatsMap.get(correctGameId);
                         stats.badges += progress.badges ? progress.badges.size : 0;
-                        // --- THIS IS THE FIX: Sum actual certificates ---
                         stats.certificates += progress.certificates ? progress.certificates.size : 0;
-                        
-                        if (progress.completedLevels) {
-                            stats.attempts += progress.completedLevels.size;
-                        }
+                        // Use the new totalAttempts field
+                        stats.attempts += progress.totalAttempts || 0;
                     }
                 });
             }
         }
 
         const results = Array.from(gameStatsMap.values());
-
         res.json(results);
 
     } catch (err) {

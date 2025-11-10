@@ -1,3 +1,4 @@
+// --- /frontend/src/components/GameSeriesModal.jsx ---
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Play, Star, X } from 'lucide-react';
@@ -23,7 +24,6 @@ const ModalGameCard = ({ game, onRateClick }) => {
     const progress = totalLevels > 0 ? Math.round((completedLevelsCount / totalLevels) * 100) : 0;
     const isInProgress = completedLevelsCount > 0;
     
-    // --- THIS IS THE FIX: Check if the current user has already rated this game ---
     const userRating = game.ratings?.find(r => r.user === user?._id);
     const hasRated = !!userRating;
     
@@ -43,9 +43,7 @@ const ModalGameCard = ({ game, onRateClick }) => {
                         <span>{progress === 100 ? 'Completed' : 'In-progress'}</span>
                         <span>{progress}%</span>
                     </div>
-                    <div className="w-full bg-muted rounded-full h-1.5">
-                        <div className="bg-red-500 h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
-                    </div>
+                    <div className="w-full bg-muted rounded-full h-1.5"><div className="bg-red-500 h-1.5 rounded-full" style={{ width: `${progress}%` }}></div></div>
                 </div>
             )}
         </div>
@@ -54,30 +52,20 @@ const ModalGameCard = ({ game, onRateClick }) => {
             <p className="text-muted-foreground text-sm leading-relaxed flex-grow">{game.description}</p>
             <div className="flex gap-2 mt-4">
                 {game.gameUrl && !game.isComingSoon ? (
-                    <Link 
-                        to={game.gameUrl} 
-                        onClick={handlePlayClick}
-                        className="flex-grow flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors"
-                    >
+                    <Link to={game.gameUrl} onClick={handlePlayClick} className="flex-grow flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors">
                         <Play size={16} className="mr-2 fill-current" /> Play
                     </Link>
                 ) : (
-                    <button className="flex-grow flex items-center justify-center bg-muted text-muted-foreground font-medium py-2 px-4 rounded-md cursor-not-allowed">
-                        Coming Soon
-                    </button>
+                    <button className="flex-grow flex items-center justify-center bg-muted text-muted-foreground font-medium py-2 px-4 rounded-md cursor-not-allowed">Coming Soon</button>
                 )}
                 
-                {/* --- THIS IS THE FIX: Conditionally render the Rate button or the user's rating --- */}
                 {!game.isComingSoon && (
                     hasRated ? (
                         <div className="flex items-center justify-center border border-border text-yellow-400 py-2 px-4 rounded-md" title={`You rated this ${userRating.rating} stars`}>
                             <Star size={16} className="mr-2 fill-current" /> Rated {userRating.rating}/5
                         </div>
                     ) : (
-                        <button 
-                            onClick={() => onRateClick(game)}
-                            className="flex items-center justify-center border border-border text-muted-foreground hover:bg-accent py-2 px-4 rounded-md transition-colors"
-                        >
+                        <button onClick={() => onRateClick(game)} className="flex items-center justify-center border border-border text-muted-foreground hover:bg-accent py-2 px-4 rounded-md transition-colors">
                             <Star size={16} className="mr-2" /> Rate
                         </button>
                     )
@@ -88,6 +76,7 @@ const ModalGameCard = ({ game, onRateClick }) => {
                     <span className="font-semibold text-muted-foreground">Category</span>
                     <p className="text-card-foreground">{game.category || 'N/A'}</p>
                 </div>
+                {/* --- THIS IS THE FIX: Reverted to only show global averageRating --- */}
                 {!game.isComingSoon && 
                 <div>
                     <span className="font-semibold text-muted-foreground">Rating</span>
@@ -99,9 +88,7 @@ const ModalGameCard = ({ game, onRateClick }) => {
                 }
                 <div>
                     <span className="font-semibold text-muted-foreground">Sponsor</span>
-                    <p className="flex items-center text-card-foreground">
-                        {game.sponsor || 'N/A'}
-                    </p>
+                    <p className="flex items-center text-card-foreground">{game.sponsor || 'N/A'}</p>
                 </div>
             </div>
         </div>
@@ -140,9 +127,7 @@ const GameSeriesModal = ({ isOpen, onClose, game, onGameUpdate }) => {
                 >
                     <div className="relative p-8 md:p-12 h-[350px] flex flex-col justify-end" style={{ backgroundImage: `url(${bg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
                         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent z-0"></div>
-                        <button onClick={onClose} className="absolute top-4 right-4 text-white bg-black/50 rounded-full p-2 hover:bg-black/80 transition-colors z-20">
-                            <X size={24} />
-                        </button>
+                        <button onClick={onClose} className="absolute top-4 right-4 text-white bg-black/50 rounded-full p-2 hover:bg-black/80 transition-colors z-20"><X size={24} /></button>
                         <div className="relative z-10 max-w-3xl">
                             <h1 className="text-5xl font-bold mb-4 text-white">{game.title}</h1>
                             <p className="text-gray-300 text-lg leading-relaxed">{game.description}</p>
@@ -156,12 +141,7 @@ const GameSeriesModal = ({ isOpen, onClose, game, onGameUpdate }) => {
                 </div>
             </div>
 
-            <RatingModal
-                isOpen={isRatingModalOpen}
-                game={gameToRate}
-                onClose={() => setIsRatingModalOpen(false)}
-                onSuccess={handleRatingSuccess}
-            />
+            <RatingModal isOpen={isRatingModalOpen} game={gameToRate} onClose={() => setIsRatingModalOpen(false)} onSuccess={handleRatingSuccess} />
         </>
     );
 };
