@@ -142,14 +142,20 @@ const ProfilePage = () => {
 
   useEffect(() => {
     if (user) {
-      setFormData({
+      // --- THIS IS THE FIX (Part 1): Conditionally set yearGroup in form state ---
+      const initialFormData = {
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         nickname: user.nickname || '',
         city: user.city || '',
         county: user.county || '',
-        yearGroup: String(user.yearGroup ?? ''),
-      });
+      };
+
+      if (user.role === 'student') {
+        initialFormData.yearGroup = String(user.yearGroup ?? '');
+      }
+      
+      setFormData(initialFormData);
       setSelectedAvatarStyle(user.avatar?.style || 'initials');
 
       if (user.role === 'student') {
@@ -315,45 +321,35 @@ const ProfilePage = () => {
 
         {isEditing ? (
           <form onSubmit={handleSaveChanges}>
+            {/* --- THIS IS THE FIX (Part 2): Remove yearGroup from admin edit form --- */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12">
                 {user.role === 'student' ? (
                     <>
+                        {/* Student View: Names & Year Group are read-only */}
                         <InfoField label="First Name" value={user.firstName} />
                         <InfoField label="Last Name" value={user.lastName} />
+                        
+                        {/* Student View: Nickname is editable */}
                         <EditField label="Nickname" name="nickname" value={formData.nickname} onChange={handleInputChange} placeholder="Your public display name"/>
+                        
                         <InfoField label="Year group" value={user.yearGroup} />
                     </>
                 ) : (
                     <>
+                        {/* Admin/Other View: All fields are editable */}
                         <EditField label="First Name" name="firstName" value={formData.firstName} onChange={handleInputChange} />
                         <EditField label="Last Name" name="lastName" value={formData.lastName} onChange={handleInputChange} />
-                        <EditField label="Display Name" name="nickname" value={formData.nickname} onChange={handleInputChange} placeholder="Your public display name"/>
-                        {/* <div className="mb-6">
-                            <label htmlFor="yearGroup" className="block text-sm text-muted-foreground mb-2">
-                            Year group
-                            </label>
-                            <select
-                            id="yearGroup"
-                            name="yearGroup"
-                            value={formData.yearGroup}
-                            onChange={handleInputChange}
-                            className="w-full px-4 py-3 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring appearance-none"
-                            >
-                            <option value="">Select Year...</option>
-                            {Array.from({ length: 7 }, (_, i) => i + 7).map((year) => (
-                                <option key={year} value={year}>
-                                Year {year}
-                                </option>
-                            ))}
-                            </select>
-                        </div> */}
+                        <EditField label="Nickname" name="nickname" value={formData.nickname} onChange={handleInputChange} placeholder="Your public display name"/>
+                        {/* Year group selector is now removed for non-students */}
                     </>
                 )}
+
                 <InfoField label="School" value={user.school?.name} />
                 <InfoField label="City" value={user.school?.city} />
                 <InfoField label="County" value={user.school?.county} />
-                {user.role === 'student' && <InfoField label="Student ID" value={user.studentId} canCopy />}
+                {/* {user.role === 'student' && <InfoField label="Student ID" value={user.studentId} canCopy />} */}
             </div>
+
 
             {error && <p className="text-destructive text-sm text-center my-4">{error}</p>}
             {success && <p className="text-green-500 text-sm text-center my-4">{success}</p>}
@@ -385,6 +381,8 @@ const ProfilePage = () => {
               <InfoField label="School" value={user.school?.name} />
               <InfoField label="City" value={user.school?.city} />
               <InfoField label="County" value={user.school?.county} />
+              
+              {/* --- THIS IS THE FIX (Part 3): Conditionally show yearGroup in view mode --- */}
               {user.role === 'student' && (
                 <>
                   <InfoField label="Student ID" value={user.studentId} canCopy />

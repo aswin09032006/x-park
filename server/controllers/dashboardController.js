@@ -4,9 +4,6 @@ const Game = require('../models/Game');
 const School = require('../models/School');
 const mongoose = require('mongoose');
 
-// @desc    Get aggregated statistics for a school admin's dashboard
-// @route   GET /api/dashboard/school-admin
-// @access  Private (School Admin)
 exports.getSchoolAdminDashboardStats = async (req, res) => {
     try {
         const adminSchoolId = req.user.school;
@@ -29,7 +26,7 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
             totalCertificates: 0,
             studentsWithBadges: 0,
             studentsWithCertificates: 0,
-            totalGameAttempts: 0, // <-- This will be updated
+            totalGameAttempts: 0,
             topPerformers: [],
         };
 
@@ -40,7 +37,7 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
             let studentTotalCertificates = 0;
             let studentScore = 0;
             let hasBadge = false;
-            let studentAttempts = 0; // <-- This will be updated
+            let studentAttempts = 0;
 
             if (student.gameData && student.gameData.size > 0) {
                 student.gameData.forEach((progress, gameId) => {
@@ -55,7 +52,6 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
                         progress.highScores.forEach(score => studentScore += score);
                     }
                     
-                    // Use the new totalAttempts field
                     studentAttempts += progress.totalAttempts || 0;
                     
                     gamePlayCounts[gameId] = (gamePlayCounts[gameId] || 0) + (progress.totalAttempts || 0);
@@ -82,6 +78,7 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
         stats.topPerformers.sort((a, b) => b.score - a.score);
         stats.topPerformers = stats.topPerformers.slice(0, 5);
 
+        // --- THIS IS THE FIX: Added secondary and tertiary sort keys for stable ordering ---
         const favoriteGames = await Game.aggregate([
             { $unwind: '$ratings' },
             { $match: { 'ratings.user': { $in: studentIds } } },
@@ -93,7 +90,7 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
                     numRatings: { $sum: 1 }
                 }
             },
-            { $sort: { averageRating: -1 } },
+            { $sort: { averageRating: -1, numRatings: -1, title: 1 } }, // <-- MODIFIED
             { $limit: 4 }
         ]);
 
@@ -102,8 +99,13 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
         allGames.forEach(game => {
             const gameInfo = { title: game.title, imageUrl: game.imageUrl };
             gameMap.set(game._id.toString(), gameInfo);
-            if (game.title === 'Data Forge') gameMap.set('data-forge', gameInfo);
-            if (game.title === 'Network Shield') gameMap.set('cyber-security', gameInfo);
+            
+            if (game.title === 'Data Forge') {
+                gameMap.set('data-forge', gameInfo);
+            }
+            if (game.title === 'Network Shield') {
+                gameMap.set('cyber-security', gameInfo);
+            }
         });
 
         const topPlayedGames = Object.entries(gamePlayCounts)
@@ -112,7 +114,7 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
                 return {
                     title: gameInfo.title,
                     imageUrl: gameInfo.imageUrl,
-                    students: count // This now represents total plays, not unique students
+                    students: count
                 };
             })
             .sort((a, b) => b.students - a.students)
@@ -131,7 +133,11 @@ exports.getSchoolAdminDashboardStats = async (req, res) => {
     }
 };
 
-// --- THIS IS THE FIX: Added rating calculation ---
+
+
+// @desc    Get aggregated game progress for a school admin's school
+// @route   GET /api/dashboard/school-game-progress
+// @access  Private (School Admin)
 exports.getSchoolGameProgress = async (req, res) => {
     try {
         const adminSchoolId = req.user.school;
@@ -159,7 +165,7 @@ exports.getSchoolGameProgress = async (req, res) => {
                 category: game.category,
                 imageUrl: game.imageUrl,
                 badges: 0,
-                attempts: 0, // <-- This will be updated
+                attempts: 0,
                 certificates: 0,
                 averageRating: averageSchoolRating.toFixed(1),
             });
@@ -177,7 +183,6 @@ exports.getSchoolGameProgress = async (req, res) => {
                         const stats = gameStatsMap.get(correctGameId);
                         stats.badges += progress.badges ? progress.badges.size : 0;
                         stats.certificates += progress.certificates ? progress.certificates.size : 0;
-                        // Use the new totalAttempts field
                         stats.attempts += progress.totalAttempts || 0;
                     }
                 });
@@ -185,6 +190,7 @@ exports.getSchoolGameProgress = async (req, res) => {
         }
 
         const results = Array.from(gameStatsMap.values());
+
         res.json(results);
 
     } catch (err) {

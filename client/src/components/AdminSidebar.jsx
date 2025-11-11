@@ -1,5 +1,6 @@
+// --- /frontend/src/components/AdminSidebar.jsx ---
 import React from 'react';
-import { Star, Info } from 'lucide-react'; // Import the Info icon
+import { Star, Info } from 'lucide-react';
 import { getAvatarUrl } from '../utils/avatar';
 
 const GameList = ({ title, games, showRating = false }) => (
@@ -21,7 +22,6 @@ const GameList = ({ title, games, showRating = false }) => (
                             )}
                             <p className="text-card-foreground">{game.title}</p>
                         </div>
-                        {/* --- THIS IS THE FIX (Part 1): Add a tooltip to the rating section --- */}
                         <div 
                             className="flex items-center gap-2"
                             title={showRating ? "This rating is calculated only from students at your school." : ""}
@@ -40,7 +40,6 @@ const GameList = ({ title, games, showRating = false }) => (
                 </li>
             )}
         </ul>
-        {/* --- THIS IS THE FIX (Part 2): Add a clarifying footnote --- */}
         {showRating && games.length > 0 && (
             <div className="mt-4 pt-3 border-t border-border text-xs text-muted-foreground flex items-center gap-2">
                 <Info size={14} />
@@ -56,6 +55,10 @@ const AdminSidebar = ({ user, schoolName, favoriteGames, topPlayedGames }) => {
         return null;
     }
 
+    // --- THIS IS THE FIX: Construct the admin's full name for display ---
+    const adminFullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    const displayName = adminFullName || user.username;
+
     return (
         <div className="space-y-8">
             <div className="flex flex-col items-center text-center bg-card p-6 rounded-2xl">
@@ -64,7 +67,8 @@ const AdminSidebar = ({ user, schoolName, favoriteGames, topPlayedGames }) => {
                     alt="admin" 
                     className="w-24 h-24 rounded-full mb-4 object-cover" 
                 />
-                <h2 className="text-xl font-bold">{user.username}</h2>
+                {/* Use the new displayName variable */}
+                <h2 className="text-xl font-bold">{displayName}</h2>
                 <p className="text-muted-foreground text-sm mb-3">{schoolName}</p>
                 <span className="bg-lime-500/20 text-lime-300 text-xs font-semibold py-1 px-3 rounded-full">Admin</span>
             </div>

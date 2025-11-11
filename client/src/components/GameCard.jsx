@@ -70,7 +70,7 @@ const GameCard = React.memo(({ game, onClick }) => {
               <div>
                 <p className="text-gray-400 text-xs mb-1">Rating</p>
                 <div className="flex items-center">
-                  <Star size={16} className="text-green-400 mr-1" />
+                  <Star size={16} className="text-yellow-400 mr-1" />
                   <span className="text-white font-medium">
                     {averageRating ? averageRating.toFixed(1) : 'N/A'}
                   </span>
