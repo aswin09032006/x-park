@@ -158,3 +158,13 @@ You can now access the application in your browser!
 -   `npm run dev`: Starts the Vite development server.
 -   `npm run build`: Builds the production-ready application.
 -   `npm run preview`: Previews the production build locally.
+
+## 🚫 Contributing
+
+This project is currently in **production** and not open for public contributions.  
+For inquiries, feature requests, or collaboration opportunities, please contact the development team directly.
+
+## 📜 License
+
+This project is **proprietary and not open-source**.  
+All rights reserved. Unauthorized copying, modification, or distribution of this software is strictly prohibited.
